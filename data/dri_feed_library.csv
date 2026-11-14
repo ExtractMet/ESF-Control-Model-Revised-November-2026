@@ -1,0 +1,7 @@
+grade,Al2O3,C,CaO,Fe,MgO,MnO,P2O5,S,SiO2,TiO2,note
+DRI-A (13.8 % gangue),3.1,0.0,0.55,86.22,0.35,0.75,0.09,0.02,8.82,0.1,"reference grade, Industry-X anonymised"
+DRI-B (15.5 % gangue),3.42,0.0,0.55,84.5,0.4,1.05,0.09,0.02,9.77,0.2,"reference grade, Industry-X anonymised"
+DRI-C (16.0 % gangue),4.2,0.0,0.55,84.05,0.4,0.9,0.09,0.02,9.73,0.06,"reference grade, Industry-X anonymised"
+DRI-HG (7.2 % gangue),1.6,0.0,0.4,92.85,0.25,0.45,0.03,0.02,4.35,0.05,"reference grade, Industry-X anonymised"
+DRI-Pilbara (19 % gangue),5.3,0.0,0.6,81.0,0.45,1.1,0.13,0.02,11.2,0.2,"reference grade, Industry-X anonymised"
+"HBI (carburised, 2 % C)",2.1,2.0,1.2,87.3,0.45,0.55,0.06,0.02,5.6,0.08,"reference grade, Industry-X anonymised"

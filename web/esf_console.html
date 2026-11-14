@@ -1,0 +1,2049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>ESF-DT :: Electric Smelting Furnace console — Extractmet Private Limited</title>
+<style>
+:root{
+  --ink:#12263a; --muted:#5c6b7a; --line:#d9e0e6; --bg:#f4f6f8; --card:#fff;
+  --blue:#1f4e79; --red:#c1121f; --teal:#2a9d8f; --amber:#e07a5f;
+  --violet:#6a4c93; --sand:#f4a261; --green:#8ab17d;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:14px/1.5 Inter,"Segoe UI",Helvetica,Arial,sans-serif}
+header{background:linear-gradient(90deg,#12263a,#1f4e79);color:#fff;
+  padding:14px 22px;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+header h1{margin:0;font-size:18px;font-weight:700;letter-spacing:.2px}
+header .sub{font-size:12px;opacity:.82}
+header .tag{margin-left:auto;font-size:11px;background:rgba(255,255,255,.15);
+  padding:4px 10px;border-radius:20px}
+nav{display:flex;gap:2px;background:#fff;border-bottom:1px solid var(--line);
+  padding:0 14px;overflow-x:auto}
+nav button{background:none;border:0;padding:11px 15px;font-size:13px;
+  color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;
+  white-space:nowrap}
+nav button.on{color:var(--blue);border-bottom-color:var(--blue);font-weight:600}
+main{padding:16px 20px 60px}
+.page{display:none}.page.on{display:block}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(360px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;
+  padding:14px 16px}
+.card h3{margin:0 0 10px;font-size:13px;text-transform:uppercase;
+  letter-spacing:.6px;color:var(--muted)}
+label{display:flex;justify-content:space-between;align-items:center;gap:10px;
+  font-size:12.5px;padding:3px 0}
+label span{color:var(--muted)}
+input[type=number],select{width:118px;padding:4px 6px;border:1px solid var(--line);
+  border-radius:6px;font:inherit;font-size:12.5px;background:#fff}
+input[type=range]{width:118px}
+button.act{background:var(--blue);color:#fff;border:0;border-radius:7px;
+  padding:9px 16px;font-size:13px;cursor:pointer}
+button.act.ghost{background:#fff;color:var(--blue);border:1px solid var(--blue)}
+button.act:hover{filter:brightness(1.08)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{padding:5px 7px;border-bottom:1px solid #eef1f4;text-align:left}
+th{color:var(--muted);font-weight:600;position:sticky;top:0;background:#fff}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.scroll{max-height:340px;overflow:auto}
+.kpi{display:flex;flex-direction:column;gap:2px}
+.kpi .v{font-size:22px;font-weight:700}
+.kpi .l{font-size:11px;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.5px}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;
+  font-weight:600}
+.b-ok{background:#e7f6f1;color:#1d6f63}
+.b-warn{background:#fdf3e3;color:#9a6209}
+.b-alarm{background:#fdecec;color:#c1121f}
+.b-tap{background:#eaf1f8;color:#1f4e79}
+canvas{width:100%;height:auto;display:block}
+.note{font-size:12px;color:var(--muted);margin-top:8px}
+.svgwrap{overflow:auto;background:#f7f8fa;border-radius:8px}
+footer{padding:18px 22px;color:var(--muted);font-size:11.5px;
+  border-top:1px solid var(--line);background:#fff}
+.md h4{margin:16px 0 6px;font-size:14px}
+.md p,.md li{font-size:13px;color:#33414f}
+.pill{font-size:11px;padding:2px 7px;border-radius:5px;background:#eef2f6;
+  color:var(--muted);margin-left:6px}
+</style>
+</head>
+<body>
+<header>
+  <h1>ESF&#8209;DT &middot; Electric Smelting Furnace console</h1>
+  <div class="sub">First-principles digital twin for DRI smelting &middot;
+    reference plant: <b>Industry&#8209;X</b></div>
+  <div class="tag">Extractmet Private Limited &middot; v1.0.0</div>
+</header>
+
+<nav id="nav"></nav>
+<main>
+
+<!-- ================= 1 SCHEMATIC ================= -->
+<section class="page on" id="p-schematic">
+  <div id="warnBox"></div>
+  <div class="grid g4" id="kpiStrip" style="margin-bottom:14px"></div>
+  <div class="card">
+    <h3>Live process schematic</h3>
+    <div class="svgwrap" id="svgHost"></div>
+    <div class="note">Every bath level, electrode immersion, arc gap,
+      freeze-lining thickness, temperature and composition in the drawing is
+      taken from the current solution. Use the replay slider on the
+      <b>Trajectories</b> page to animate a dynamic run.</div>
+    <div style="margin-top:10px"><button class="act ghost"
+      onclick="downloadSVG()">Download SVG</button></div>
+  </div>
+</section>
+
+<!-- ================= 2 INPUTS ================= -->
+<section class="page" id="p-inputs">
+  <div class="grid g3">
+    <div class="card"><h3>Feed</h3><div id="inFeed"></div></div>
+    <div class="card"><h3>Product targets</h3><div id="inTarget"></div></div>
+    <div class="card"><h3>Furnace geometry</h3><div id="inGeo"></div></div>
+    <div class="card"><h3>Electrical &amp; losses</h3><div id="inElec"></div></div>
+    <div class="card"><h3>Economics</h3><div id="inEcon"></div></div>
+    <div class="card"><h3>DRI composition (wt%)</h3>
+      <div class="scroll"><table id="tDRI"></table></div></div>
+  </div>
+  <div style="margin-top:14px;display:flex;gap:10px">
+    <button class="act" onclick="solveStatic();go('schematic')">Solve static</button>
+    <button class="act ghost" onclick="resetInputs()">Reset defaults</button>
+    <button class="act ghost" onclick="exportJSON()">Export case (JSON)</button>
+  </div>
+</section>
+
+<!-- ================= 3 MASS ================= -->
+<section class="page" id="p-mass">
+  <div class="grid g2">
+    <div class="card"><h3>Charge and products</h3>
+      <div class="scroll"><table id="tStreams"></table></div></div>
+    <div class="card"><h3>Hot metal</h3>
+      <div class="scroll"><table id="tHM"></table></div></div>
+    <div class="card"><h3>Tapped slag</h3>
+      <div class="scroll"><table id="tSlag"></table></div></div>
+    <div class="card"><h3>Off-gas, dust and closure</h3>
+      <div class="scroll"><table id="tGas"></table></div></div>
+  </div>
+  <div class="card" style="margin-top:14px"><h3>Mass balance</h3>
+    <canvas id="cMass" width="1100" height="300"></canvas></div>
+</section>
+
+<!-- ================= 4 ENERGY ================= -->
+<section class="page" id="p-energy">
+  <div class="grid g2">
+    <div class="card"><h3>Heat balance (MJ per tonne hot metal)</h3>
+      <div class="scroll"><table id="tHeat"></table></div></div>
+    <div class="card"><h3>Energy split</h3>
+      <canvas id="cEnergy" width="620" height="340"></canvas></div>
+  </div>
+  <div class="card" style="margin-top:14px"><h3>SEC hierarchy</h3>
+    <div class="grid g3" id="secStrip"></div>
+    <div class="note"><b>Reversible</b> is the pure thermodynamic
+      requirement. <b>Equilibrium basis</b> divides it by the thermal
+      utilisation factor so it can be compared like-for-like with published
+      FactSage and HSC values. <b>Operating</b> adds the lining losses and the
+      electrical-to-bath efficiency: this is what the transformer delivers.
+    </div></div>
+</section>
+
+<!-- ================= 5 SLAG/METAL ================= -->
+<section class="page" id="p-props">
+  <div class="grid g2">
+    <div class="card"><h3>Slag properties</h3>
+      <div class="scroll"><table id="tSlagP"></table></div></div>
+    <div class="card"><h3>Hot-metal properties</h3>
+      <div class="scroll"><table id="tMetP"></table></div></div>
+  </div>
+  <div class="card" style="margin-top:14px"><h3>Property trends</h3>
+    <canvas id="cProps" width="1100" height="300"></canvas></div>
+  <div class="card" style="margin-top:14px"><h3>Equilibrium partition</h3>
+    <canvas id="cEq" width="1100" height="300"></canvas></div>
+  <div class="card" style="margin-top:14px">
+    <h3>Slag valorisation &mdash; reuse as a cementitious material</h3>
+    <div id="valorBox"></div>
+    <div class="note">The commercial case for the ESF route rests partly on
+      its slag being usable in cement, which blast-furnace slag already is
+      and a high-basicity foaming EAF slag is not. Basicity near 1, low FeO
+      and free MgO below saturation are what decide it.</div>
+  </div>
+</section>
+
+<!-- ================= 6 REFRACTORY ================= -->
+<section class="page" id="p-refr">
+  <div class="grid g4" id="refrStrip"></div>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card"><h3>Zone heat losses</h3>
+      <div class="scroll"><table id="tZones"></table></div></div>
+    <div class="card"><h3>Lining stack</h3>
+      <div class="scroll"><table id="tLining"></table></div></div>
+  </div>
+  <div class="card" style="margin-top:14px"><h3>Through-lining profiles and freeze response</h3>
+    <canvas id="cRefr" width="1100" height="320"></canvas></div>
+</section>
+
+<!-- ================= 7 ELECTRICAL ================= -->
+<section class="page" id="p-elec">
+  <div class="grid g4" id="elecStrip"></div>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card"><h3>Operating point</h3>
+      <div class="scroll"><table id="tElec"></table></div></div>
+    <div class="card"><h3>Power vs electrode immersion</h3>
+      <canvas id="cElec" width="620" height="320"></canvas></div>
+  </div>
+</section>
+
+<!-- ================= 8 PARAMETRIC ================= -->
+<section class="page" id="p-sweep">
+  <div class="card">
+    <h3>Parametric study</h3>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:end">
+      <label><span>Variable</span><select id="swVar"></select></label>
+      <label><span>from</span><input type="number" id="swLo" value="80"></label>
+      <label><span>to</span><input type="number" id="swHi" value="100"></label>
+      <label><span>points</span><input type="number" id="swN" value="15"></label>
+      <button class="act" onclick="runSweep()">Run sweep</button>
+      <button class="act ghost" onclick="downloadCSV(sweepCSV(),'esf_sweep.csv')">CSV</button>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px"><canvas id="cSweep" width="1100" height="620"></canvas></div>
+  <div class="card" style="margin-top:14px"><h3>Sweep table</h3>
+    <div class="scroll"><table id="tSweep"></table></div></div>
+</section>
+
+<!-- ================= 9 DYNAMIC ================= -->
+<section class="page" id="p-dyn">
+  <div class="grid g3">
+    <div class="card"><h3>Run control</h3><div id="dynRun"></div></div>
+    <div class="card"><h3>Feed programme</h3><div id="dynFeed"></div></div>
+    <div class="card"><h3>Tapping schedule</h3><div id="dynTap"></div></div>
+    <div class="card"><h3>Initial bath</h3><div id="dynInit"></div></div>
+    <div class="card"><h3>Kinetics (plant-calibratable)</h3><div id="dynKin"></div></div>
+    <div class="card"><h3>Campaign summary</h3>
+      <div class="scroll"><table id="tDynSum"></table></div></div>
+  </div>
+  <div style="margin-top:14px;display:flex;gap:10px">
+    <button class="act" onclick="runDynamic()">Run dynamic simulation</button>
+    <button class="act ghost" onclick="downloadCSV(trajCSV(),'esf_trajectory.csv')">Trajectory CSV</button>
+  </div>
+</section>
+
+<!-- ================= 10 TRAJECTORIES ================= -->
+<section class="page" id="p-traj">
+  <div class="card">
+    <h3>Replay</h3>
+    <label><span id="replayLbl">time</span>
+      <input type="range" id="replay" min="0" max="0" value="0" step="1"
+             oninput="replayTo(this.value)" style="width:60%"></label>
+    <div class="svgwrap" id="svgHost2"></div>
+  </div>
+  <div class="card" style="margin-top:14px"><h3>Process trajectories</h3>
+    <canvas id="cDyn" width="1160" height="960"></canvas></div>
+</section>
+
+<!-- ================= 11 EVENTS ================= -->
+<section class="page" id="p-events">
+  <div class="card">
+    <h3>Event log</h3>
+    <div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap">
+      <label><span>Filter</span><select id="evFilter" onchange="renderEvents()">
+        <option>ALL</option><option>TAP-METAL</option><option>TAP-SLAG</option>
+        <option>ALARM</option><option>WARNING</option><option>FEED</option>
+      </select></label>
+      <button class="act ghost" onclick="downloadCSV(eventCSV(),'esf_event_log.csv')">Export CSV</button>
+    </div>
+    <div class="scroll" style="max-height:520px;margin-top:10px">
+      <table id="tEvents"></table></div>
+  </div>
+  <div class="card" style="margin-top:14px"><h3>Additions and cumulative totals</h3>
+    <div class="scroll"><table id="tAdds"></table></div></div>
+</section>
+
+<!-- ================= 12 ECONOMICS ================= -->
+<section class="page" id="p-econ">
+  <div class="grid g4" id="econStrip"></div>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card"><h3>Conversion cost</h3>
+      <div class="scroll"><table id="tCost"></table></div></div>
+    <div class="card"><h3>Cost split and power-price sensitivity</h3>
+      <canvas id="cEcon" width="620" height="320"></canvas></div>
+  </div>
+  <div class="card" style="margin-top:14px"><h3>Annualised</h3>
+    <div class="scroll"><table id="tAnnual"></table></div></div>
+</section>
+
+<!-- ================= 13 HELP ================= -->
+<section class="page" id="p-help">
+  <div class="card md" id="helpBody"></div>
+</section>
+
+</main>
+<footer>
+  ESF&#8209;DT v1.0.0 &mdash; Electric Smelting Furnace digital twin.
+  &copy; Extractmet Private Limited, IIT Madras Research Park.
+  This browser console runs a reduced-order form of the ESF&#8209;DT engine
+  entirely on your machine; nothing is uploaded. The Python package is the
+  reference implementation. All plant references are anonymised as
+  <b>Industry&#8209;X</b>.
+</footer>
+
+<script>
+/* ======================================================================
+   ESF-DT browser engine (reduced-order form of the Python package)
+   ====================================================================== */
+const MW={Fe:55.845,C:12.011,Si:28.086,Mn:54.938,P:30.974,S:32.06,Ti:47.867,
+  O:15.999,Ca:40.078,Mg:24.305,Al:26.982,
+  FeO:71.844,Fe2O3:159.688,SiO2:60.084,MnO:70.937,P2O5:141.944,TiO2:79.866,
+  CaO:56.077,MgO:40.304,Al2O3:101.961,CaS:72.14,CO:28.01,CO2:44.009,
+  H2O:18.015,N2:28.014,CaCO3:100.086,MgCO3:84.31,"Ca(OH)2":74.09};
+
+const DRI={
+ "DRI-A (13.8 % gangue)":{Fe:86.22,SiO2:8.82,Al2O3:3.10,CaO:0.55,MgO:0.35,
+   MnO:0.75,TiO2:0.10,P2O5:0.09,S:0.02},
+ "DRI-B (15.5 % gangue)":{Fe:84.50,SiO2:9.77,Al2O3:3.42,CaO:0.55,MgO:0.40,
+   MnO:1.05,TiO2:0.20,P2O5:0.09,S:0.02},
+ "DRI-C (16.0 % gangue)":{Fe:84.05,SiO2:9.73,Al2O3:4.20,CaO:0.55,MgO:0.40,
+   MnO:0.90,TiO2:0.06,P2O5:0.09,S:0.02},
+ "DRI-HG (7.2 % gangue)":{Fe:92.85,SiO2:4.35,Al2O3:1.60,CaO:0.40,MgO:0.25,
+   MnO:0.45,TiO2:0.05,P2O5:0.03,S:0.02},
+ "DRI-Pilbara (19 % gangue)":{Fe:81.00,SiO2:11.20,Al2O3:5.30,CaO:0.60,
+   MgO:0.45,MnO:1.10,TiO2:0.20,P2O5:0.13,S:0.02},
+ "DRI-Shahabuddin (16 % gangue)":{Fe:84.05,SiO2:9.76,Al2O3:4.88,Mn:1.07,
+   S:0.04,CaO:0.10,MgO:0.05,TiO2:0.03,P2O5:0.02},
+ "DRI-OSBF (industrial reference)":{Fe:87.85,SiO2:8.72,Al2O3:2.19,CaO:0.40,
+   MgO:0.30,MnO:0.21,TiO2:0.05,P2O5:0.05,S:0.08},
+ "H2-DRI-BP85 (85 % MR, lab)":{Fe:76.8,FeO:17.4,SiO2:3.5,Al2O3:2.1,CaO:0.14,
+   MgO:0.1},
+ "H2-DRI-BP88 (88 % MR, lab)":{Fe:78.5,FeO:14.0,SiO2:3.9,Al2O3:1.4,CaO:1.60,
+   MgO:0.5,P2O5:0.18,S:0.02},
+ "HBI (carburised, 2 % C)":{Fe:87.30,SiO2:5.60,Al2O3:2.10,CaO:1.20,MgO:0.45,
+   MnO:0.55,TiO2:0.08,P2O5:0.06,S:0.02,C:2.00}};
+
+const CARB={
+ "Metallurgical coke":{C:87,ash_SiO2:5.5,ash_Al2O3:3.0,H2O:2.0,S:0.6,VM:1.9},
+ "Anthracite":{C:84,ash_SiO2:5.0,ash_Al2O3:2.5,H2O:3.0,S:0.5,VM:5.0},
+ "Char (biomass)":{C:88,ash_SiO2:2.0,ash_Al2O3:0.8,H2O:4.0,S:0.05,VM:5.15},
+ "Graphite":{C:99,ash_SiO2:0.5,ash_Al2O3:0.3,H2O:0.1,S:0.02,VM:0.08},
+ "Petroleum coke":{C:89,ash_SiO2:0.4,ash_Al2O3:0.2,H2O:1.0,S:4.5,VM:4.9}};
+
+const FLUX={
+ "Burnt lime":{CaO:93,MgO:1.5,SiO2:1.8,Al2O3:0.7,CaCO3:2.0,H2O:1.0},
+ "Limestone":{CaCO3:95,MgO:1.0,SiO2:2.0,Al2O3:1.0,H2O:1.0},
+ "Dolomitic lime":{CaO:57,MgO:38,SiO2:1.5,Al2O3:0.6,CaCO3:2.0,H2O:0.9},
+ "Raw dolomite":{DOLO:96,SiO2:2.0,Al2O3:1.0,H2O:1.0},
+ "Calcined magnesia":{MgO:94,CaO:2.0,SiO2:2.5,Al2O3:1.0,H2O:0.5},
+ "Quartzite":{SiO2:97,Al2O3:1.5,CaO:0.5,H2O:1.0},
+ "Bauxite":{Al2O3:85,SiO2:8.0,TiO2:3.0,CaO:0.5,H2O:3.5}};
+
+const SCRAP={Fe:98.0,C:0.20,Si:0.25,Mn:0.45,P:0.03,S:0.03,SiO2:0.35,
+  Al2O3:0.14};
+
+/* Oxide actually delivered to the slag per kg of flux charged; `total`
+   is what makes a flux dilute the very slag it is meant to modify.      */
+function fluxYield(name){
+  const y=splitFlux(name,1.0);
+  const o={CaO:y.CaO||0,MgO:y.MgO||0,SiO2:y.SiO2||0,Al2O3:y.Al2O3||0,
+           TiO2:y.TiO2||0};
+  o.total=o.CaO+o.MgO+o.SiO2+o.Al2O3+o.TiO2;
+  return o;
+}
+
+/* Heat absorbed calcining a flux and boiling off its free moisture (kJ). */
+function calcineHeat(name,mass,Tg,carbonateOnly){
+  const f=FLUX[name]||{}; let Q=0;
+  const cc=mass*(f.CaCO3||0)/100;
+  if(cc>0)Q+=cc/MW.CaCO3*178.3e3;                    /* kJ */
+  const dl=mass*(f.DOLO||0)/100;
+  if(dl>0)Q+=dl/184.40*302.0e3;
+  if(carbonateOnly)return Q;
+  const w=mass*(f.H2O||0)/100;
+  if(w>0)Q+=w*(2450+2.0*(Tg-373));
+  return Q;                                          /* kJ */
+}
+
+/* Decompose a flux into the oxides it delivers to the slag (kg) plus the
+   CO2 and H2O it releases; carbonates are calcined on the way in.        */
+function splitFlux(name,mass){
+  const f=FLUX[name]||{}, o={CaO:0,MgO:0,SiO2:0,Al2O3:0,TiO2:0,CO2:0,H2O:0};
+  for(const k in f){
+    const m=mass*f[k]/100;
+    if(k==="CaCO3"){o.CaO+=m*MW.CaO/MW.CaCO3; o.CO2+=m*MW.CO2/MW.CaCO3;}
+    else if(k==="DOLO"){                       /* CaMg(CO3)2, M = 184.40 */
+      o.CaO+=m*MW.CaO/184.40; o.MgO+=m*MW.MgO/184.40;
+      o.CO2+=m*2*MW.CO2/184.40;}
+    else if(k==="H2O"){o.H2O+=m;}
+    else if(k in o){o[k]+=m;}
+  }
+  return o;
+}
+
+/* --- oxide sensible heat at 1833 K, kJ/kg (solid path from 298 K) ------ */
+const HS={SiO2:1711,CaO:1460,MgO:1914,Al2O3:1833,FeO:1010,MnO:1040,
+  TiO2:1360,P2O5:1250,CaS:1180};
+/* --- effective latent heat in the slag solution, kJ/kg ---------------- */
+const LEFF={SiO2:135,CaO:445,MgO:515,Al2O3:365,FeO:335,MnO:325,TiO2:340,
+  P2O5:270,CaS:540};
+const CP_SLAG_L=1.20;                      /* kJ/kg/K above liquidus     */
+/* Optional reporting factor only, defaulting to unity so that the
+   equilibrium-basis tier equals the reversible one.  The fitted value of
+   0.887 used earlier has been withdrawn: the ratio it represented runs from
+   0.775 to 0.886 across the published cases that can be checked, so it is
+   not a physical efficiency.  A user who wants to reproduce a particular
+   code's reporting convention may set it.                                  */
+const ETA_TH=1.0;
+
+/* --- reaction endotherms ---------------------------------------------
+   FeO   : per kg of FeO reduced      (152 MJ/kmol FeO)
+   others: per kg of metal produced   (689 / 275 / 720 / 460 MJ/kmol)   */
+const DH={FeO:152000/MW.FeO, Si:689000/MW.Si, Mn:275000/MW.Mn,
+  Ti:720000/MW.Ti, P:460000/MW.P};
+const DH_C_DISS=1882;                      /* kJ per kg C dissolved      */
+const DH_SI_DISS=-4696;
+
+/* Effective thermal conductivities at the working mean temperature of each
+   layer (W/m/K), matched to the Python REFRACTORY_DB.                    */
+const REFR={"Steel shell":34.47,"Ramming mass":2.340,"Copper cooler":337.9,
+  "High-alumina 70 %":2.076,"Carbon block":19.19,"MgO-C (20 %C)":10.14,
+  "Insulating castable":0.617,"Microporous board":0.0701,
+  "Alumina-spinel":2.679,"Freeze lining (slag)":1.60};
+
+const LINING={
+ hearth:[["Carbon block",0.400],["Ramming mass",0.100],
+         ["High-alumina 70 %",0.230],["Insulating castable",0.100],
+         ["Microporous board",0.025],["Steel shell",0.060]],
+ metal_wall:[["MgO-C (20 %C)",0.400],["Ramming mass",0.080],
+         ["High-alumina 70 %",0.115],["Microporous board",0.030],
+         ["Steel shell",0.045]],
+ slag_wall:[["Ramming mass",0.015],["Copper cooler",0.090],
+         ["Steel shell",0.040]],
+ freeboard:[["Alumina-spinel",0.120],["Copper cooler",0.050],
+         ["Steel shell",0.030]],
+ roof:[["Alumina-spinel",0.100],["Copper cooler",0.050],
+         ["Steel shell",0.025]]};
+const COOLING={hearth:"forced-air",metal_wall:"forced-air",slag_wall:"water",
+  freeboard:"water",roof:"water"};
+const SIGMA=5.670374419e-8;
+
+/* ---------------------------------------------------------------- utils */
+const sum=o=>Object.values(o).reduce((a,b)=>a+(b||0),0);
+function norm(o){const t=sum(o)||1;const r={};for(const k in o)r[k]=o[k]/t*100;
+  return r;}
+function fmt(v,n=2){return (v==null||isNaN(v))?"-":
+  Number(v).toLocaleString(undefined,{minimumFractionDigits:n,
+    maximumFractionDigits:n});}
+function molOx(sl){const n={};let t=0;
+  for(const k in sl){if(!MW[k]||sl[k]<=0)continue;n[k]=sl[k]/MW[k];t+=n[k];}
+  for(const k in n)n[k]/=(t||1); return n;}
+function opticalBasicity(sl){
+  const L={SiO2:0.48,CaO:1.00,MgO:0.78,Al2O3:0.60,FeO:1.00,MnO:1.00,
+    TiO2:0.61,P2O5:0.40,CaS:1.00};
+  const O={SiO2:2,CaO:1,MgO:1,Al2O3:3,FeO:1,MnO:1,TiO2:2,P2O5:5,CaS:0};
+  const x=molOx(sl);let a=0,b=0;
+  for(const k in x){a+=x[k]*(O[k]||1)*(L[k]||0.6);b+=x[k]*(O[k]||1);}
+  return b>0?a/b:0.6;}
+function B2(s){return (s.CaO||0)/Math.max(s.SiO2||1e-9,1e-9);}
+function B3(s){return ((s.CaO||0)+(s.MgO||0))/Math.max(s.SiO2||1e-9,1e-9);}
+function B4(s){return ((s.CaO||0)+(s.MgO||0))/
+  Math.max((s.SiO2||0)+(s.Al2O3||0),1e-9);}
+
+function slagLiquidus(s){                        /* K */
+  return 1673 + 175*(B2(s)-1.10) - 40*Math.pow(B2(s)-1.10,2)
+    + 3.6*((s.Al2O3||0)-12) + 6.8*Math.max(0,(s.MgO||0)-9)
+    - 3*Math.max(0,9-(s.MgO||0)) - 9.5*((s.FeO||0)-3);
+}
+function slagVisc(s,T){                          /* Pa.s, Urbain-like */
+  const L=opticalBasicity(s);
+  const B=Math.max(6,28-26*(L-0.45));
+  const A=Math.exp(-0.29-1.05*B);
+  return Math.min(30,Math.max(0.01,A*T*Math.exp(1000*B/T)));
+}
+function slagDens(s,T){return 2900-0.27*(T-1823)+8*((s.FeO||0)-3);}
+function slagK(s,T){return 1.1+0.0006*(T-1500);}
+function slagSigma(s,T){
+  const L=opticalBasicity(s), feo=(s.FeO||0)+(s.MnO||0);
+  let Ea=(110-55*(L-0.55)-0.9*feo)*1e3; Ea=Math.min(150e3,Math.max(60e3,Ea));
+  const s0=Math.exp(9.95+2.0*(L-0.55)+0.020*feo);
+  return Math.min(150,Math.max(0.5,s0*Math.exp(-Ea/(8.3145*T))));
+}
+function metalDens(m,T){return 7030-0.88*(T-1823)-90*(m.C||0);}
+function metalLiquidus(m){return 1811-73.1*(m.C||0)-27*(m.Si||0)
+  -4.9*(m.Mn||0)-30*(m.P||0)-38*(m.S||0);}
+function cSat(TC,m){return 1.30+2.57e-3*TC-0.31*(m.Si||0)-0.33*(m.P||0)
+  +0.04*(m.Mn||0);}
+
+/* --------------------------------------------- equilibrium partition */
+/* Wagner first-order interaction parameters at 1873 K, corrected to T.   */
+const EPS={C:{C:0.140,Si:0.080,Mn:-0.012,P:0.051,S:0.046,Ti:-0.024},
+           Si:{Si:0.110,C:0.170,Mn:0.002,P:0.090,S:0.056,Ti:-0.020},
+           Mn:{Mn:0.000,C:-0.070,Si:0.000,S:-0.048},
+           S:{S:-0.028,C:0.111,Si:0.063,Mn:-0.026,P:0.029}};
+function fWagner(el,m,T){
+  const e=EPS[el]||{}; let lg=0;
+  for(const k in e) lg+=e[k]*(m[k]||0);
+  lg*=(1873.0/Math.max(T,900));            /* first-order T correction    */
+  return Math.pow(10,lg);
+}
+function hAct(el,m,T){return (m[el]||0)*fWagner(el,m,T);}
+
+function aSiO2(s,T){
+  const x=molOx(s).SiO2||0.30;
+  const B=B3(s), Al=(s.Al2O3||0)/Math.max(s.SiO2||1e-9,1e-9);
+  let g=Math.pow(10,-2.05*(B-1.0)-0.42*Al-0.35);
+  g*=Math.exp(-3100.0*(1/T-1/1773.0));
+  /* First power, as for every other oxide here.  An earlier version squared
+     the mole fraction and called the exponent quasi-chemical; that was wrong.
+     Silica was the only oxide treated that way, the silica mole fraction
+     varies by about 1 % across the anchors the expression was fitted to so
+     the exponent was absorbed into the Gibbs energy rather than identified,
+     and the first power reproduces the published anchors more closely.      */
+  return Math.max(1e-12,g*x);
+}
+function aMnO(s,T){
+  const x=molOx(s).MnO||0.003;
+  return Math.max(1e-10,1.30*x*(1+0.5*(B2(s)-1.0)));
+}
+function siEq(s,m,T){
+  /* (SiO2) + 2[C] = [Si] + 2{CO} ;  K = h_Si / (a_SiO2 h_C^2)            */
+  const K=Math.exp(-(596200-329.5*T)/(8.3145*T));   /* refitted with a_SiO2
+     to the first power; see the note in aSiO2 above                         */
+  const hC=hAct("C",m,T);
+  if(hC<=1e-6)return 0;
+  const hSi=K*aSiO2(s,T)*hC*hC;
+  return Math.max(0,Math.min(6,hSi/Math.max(fWagner("Si",m,T),1e-6)));
+}
+function mnEq(s,m,T){
+  const K=Math.exp(-(280000-171.0*T)/(8.3145*T));
+  const hC=hAct("C",m,T);
+  const hMn=K*aMnO(s,T)*hC;
+  return Math.max(0,Math.min(6,hMn/Math.max(fWagner("Mn",m,T),1e-6)));
+}
+function LS(s,T){
+  const L=opticalBasicity(s);
+  const logC=(-13.913+42.84*L-23.82*L*L-11710/T-0.02223*(s.SiO2||0)
+    -0.02275*(s.Al2O3||0));
+  const logLs=logC+935/T-1.375+2.0;
+  return Math.min(20,Math.max(1,Math.pow(10,logLs)));
+}
+
+/* ---------------------------------------------------- enthalpy model */
+/* All specific enthalpies are kJ/kg referred to 298.15 K solids.         */
+function hFeSolid(T){const d=Math.max(0,T-298.15);
+  return 0.455*d+8.0e-5*d*d;}
+function hFeLiq(T){return 1105+0.824*(T-1773.15);}   /* undercooled liquid */
+function hCgr(T){const d=Math.max(0,T-298.15);
+  return 1.60*d+2.0e-4*d*d;}
+function hOxSolid(s,T){                    /* solid oxide mixture, kJ/kg  */
+  let v=0; const f=Math.min(1,Math.max(0,(T-298.15)/(1833-298.15)));
+  for(const k in s){if(k in HS)v+=s[k]/100*HS[k]*f;}
+  return v;
+}
+function hSlag(s,T){                       /* molten slag, kJ/kg          */
+  const Tl=slagLiquidus(s);
+  let lat=0; for(const k in s){if(k in LEFF)lat+=s[k]/100*LEFF[k];}
+  return hOxSolid(s,Math.min(T,Tl))+lat+CP_SLAG_L*Math.max(0,T-Tl);
+}
+
+/* ============================== HEAT-LOSS NETWORK ==================== */
+function zoneArea(G,z){
+  const A=G.L*G.W, P=2*(G.L+G.W);
+  return {hearth:A, metal_wall:P*G.dMetal, slag_wall:P*G.dSlag,
+          freeboard:P*G.hFb, roof:A*1.05}[z];
+}
+function outerRad(z,Tshell){                /* radiation off an air-cooled
+                                               shell, linearised (W/m2/K) */
+  return COOLING[z]==="water"?0:
+    0.85*SIGMA*(Tshell*Tshell+298.15*298.15)*(Tshell+298.15);
+}
+function outerFilm(z){
+  return COOLING[z]==="water"?[8000,308.15]:
+        (COOLING[z]==="forced-air"?[26,308.15]:[9,308.15]);
+}
+function Rlining(z,extra){
+  let R=0; const st=(extra?[extra]:[]).concat(LINING[z]);
+  for(const [m,t] of st) R+=t/(REFR[m]||1);
+  const [h]=outerFilm(z);
+  return R+1/(h+outerRad(z,450));
+}
+function solveZone(z,G,Thot,hin,freeze,Tfreeze){
+  const [,Tsink]=outerFilm(z); let x=0;
+  if(freeze){
+    const Rl=Rlining(z,null), kf=REFR["Freeze lining (slag)"];
+    const dT=Math.max(1,Thot-Tfreeze);
+    x=kf*((Tfreeze-Tsink)/Math.max(hin*dT,1e-6)-Rl);
+    x=Math.max(0,Math.min(0.20,x));
+  }
+  const extra=x>1e-5?["Freeze lining (slag)",x]:null;
+  const R=Rlining(z,extra);
+  const q=(Thot-Tsink)/(R+1/Math.max(hin,1e-3));
+  const A=zoneArea(G,z);
+  const st=(extra?[extra]:[]).concat(LINING[z]);
+  let T=Thot-q/Math.max(hin,1e-3); const nodes=[T];
+  for(const [m,t] of st){T-=q*t/(REFR[m]||1);nodes.push(T);}
+  return {zone:z,area:A,q:q,Q:q*A,nodes:nodes,layers:st,
+          Thot:nodes[0],Tshell:nodes[nodes.length-1],freeze:x};
+}
+function heatLoss(G,Tslag,Tmetal,Tgas,slag){
+  const Tl=slagLiquidus(slag);
+  const eta=slagVisc(slag,Tslag), k=slagK(slag,Tslag);
+  /* CO evolution and electro-vortex flow stir the bath, so the wall-side
+     coefficient sits well above pure natural convection; bounded to the
+     range the Python lining solver produces.                             */
+  const hslag=Math.max(250,Math.min(600,
+    18*Math.pow(Math.max(20,Tslag-Tl),0.33)/
+    Math.pow(Math.max(eta,0.05),0.25)*k));
+  /* open-bath radiation onto the cooled panels, linearised about the
+     hot-face temperature the panels actually run at                      */
+  const hrad=0.25*SIGMA*(Tslag*Tslag+1720*1720)*(Tslag+1720);
+  const Z={};
+  Z.hearth=solveZone("hearth",G,Tmetal,3000,false);
+  Z.metal_wall=solveZone("metal_wall",G,Tmetal,3000,false);
+  Z.slag_wall=solveZone("slag_wall",G,Tslag,hslag,true,Tl);
+  Z.roof=solveZone("roof",G,Tslag,hrad,false);
+  Z.freeboard=solveZone("freeboard",G,Tslag,hrad*0.85,false);
+  let Qt=0,Qw=0,Tsh=0;
+  for(const z in Z){Qt+=Z[z].Q; if(COOLING[z]==="water")Qw+=Z[z].Q;
+    Tsh=Math.max(Tsh,Z[z].Tshell);}
+  return {zones:Z,Qtot:Qt,Qwater:Qw,waterFrac:Qw/Math.max(Qt,1),
+          Tshell:Tsh,freeze:Z.slag_wall.freeze,Tliq:Tl,hslag:hslag};
+}
+
+/* ================================= ELECTRICAL ======================== */
+function electrical(G,slag,Tslag,imm,arc,Pset){
+  const sg=slagSigma(slag,Tslag), r=G.dEl/2;
+  const Leff=Math.min(0.5*G.pitch,3.0);
+  const Rcyl=Math.log(Math.max(1.2,Leff/r))/(2*Math.PI*sg*Math.max(imm,0.05));
+  const Rtip=1/(4*sg*r);
+  const Rslag=1/(1/Rcyl+1/Rtip);
+  const rhoEl=55e-6, Rel=rhoEl*2.4/(Math.PI*r*r);
+  const Uarc=arc>0?(40+1250*arc):0;
+  function at(V){
+    const I=Math.max(1,(V-Uarc)/(Rslag+Rel));
+    const Pj=I*I*Rslag*G.nEl, Pa=Uarc*I*G.nEl, Pe=I*I*Rel*G.nEl;
+    return {I:I,Pj:Pj,Pa:Pa,Pe:Pe,P:(Pj+Pa+Pe)/1e6};
+  }
+  let V=G.V;
+  if(Pset&&Pset>0){let lo=20,hi=3*G.V;
+    for(let i=0;i<70;i++){V=(lo+hi)/2; if(at(V).P<Pset)lo=V;else hi=V;}}
+  const s=at(V), fRad=Math.min(0.6,0.18+0.9*arc);
+  return {sigma:sg,Rslag:Rslag,Rel:Rel,V:V,I:s.I,Uarc:Uarc,
+    Pj:s.Pj/1e6,Pa:s.Pa/1e6,Pe:s.Pe/1e6,P:s.P,
+    Pbath:(s.Pj+s.Pa*(1-fRad))/1e6, Pfb:(s.Pa*fRad)/1e6,
+    fRad:fRad, Rop:(Rslag+Rel)*1e3,
+    eff:(s.Pj+s.Pa)/Math.max(s.Pj+s.Pa+s.Pe,1),
+    kgMWh:5.0, MVA:s.P/G.pf};
+}
+
+/* ============================== STATIC MODEL ========================= */
+function solveStaticCore(I){
+  const warnings=[];
+  const warn=(m)=>{if(warnings.indexOf(m)<0)warnings.push(m);};
+  const dri=norm(Object.assign({},I.driComp));
+  const cs=CARB[I.carbon], MR=I.MR/100;
+  const T=I.Ttap+273.15, Ts=T+I.dTs, Tg=I.Tgas+273.15, Tdri=I.Tdri+273.15;
+
+  /* ---- charge on a 1000 kg contained-Fe basis ---------------------- */
+  /* A DRI analysis states either total Fe with a separate metallisation
+     ratio, or metallic Fe with an explicit iron-oxide assay.  The second
+     convention already fixes the metallisation; applying the ratio again
+     would charge the oxidised iron twice.                              */
+  const assayFeO=(dri.FeO||0)+(dri.Fe2O3||0)*MW.FeO*2/MW.Fe2O3;
+  let mDRI,FeTot,FeMet,FeOin;
+  if(assayFeO>1e-9){
+    mDRI=1000/((dri.Fe+assayFeO*MW.Fe/MW.FeO)/100);
+    FeMet=mDRI*dri.Fe/100;
+    FeOin=mDRI*assayFeO/100;
+    FeTot=FeMet+FeOin*MW.Fe/MW.FeO;
+    warn("The analysis of this grade states metallic Fe and an iron-oxide "+
+      "assay, which fixes the metallisation at "+
+      (100*FeMet/FeTot).toFixed(1)+" %. The metallisation ratio input has "+
+      "been ignored so the iron is not counted twice.");
+  } else {
+    mDRI=1000/(dri.Fe/100);
+    FeTot=mDRI*dri.Fe/100; FeMet=FeTot*MR;
+    FeOin=(FeTot-FeMet)*MW.FeO/MW.Fe;
+  }
+  /* metallic solutes in the analysis arrive already reduced */
+  const MnDRI=mDRI*(dri.Mn||0)/100, SiDRI=mDRI*(dri.Si||0)/100,
+        PDRI=mDRI*(dri.P||0)/100;
+  const mScrap=I.scrap>0?mDRI*(I.scrap/100)/(1-I.scrap/100):0;
+  const FeScrap=mScrap*SCRAP.Fe/100;
+
+  const gangue={};                       /* oxides arriving with the DRI */
+  for(const k in dri){if(k==="Fe"||k==="S"||k==="C")continue;
+    gangue[k]=(gangue[k]||0)+mDRI*dri[k]/100;}
+  gangue.FeO=(gangue.FeO||0)+FeOin;
+  gangue.SiO2=(gangue.SiO2||0)+mScrap*SCRAP.SiO2/100;
+  gangue.Al2O3=(gangue.Al2O3||0)+mScrap*SCRAP.Al2O3/100;
+  const mGangue=sum(gangue);
+  const CinDRI=mDRI*(dri.C||0)/100, CinScrap=mScrap*SCRAP.C/100;
+  /* solutes the scrap brings in already dissolved: they must be netted
+     off every reduction term, or they get counted twice                */
+  const SiFromScrap=mScrap*SCRAP.Si/100+SiDRI,
+        MnFromScrap=mScrap*SCRAP.Mn/100+MnDRI,
+        PFromScrap=mScrap*SCRAP.P/100+PDRI;
+
+  /* ---- iterate the coupled chemistry / flux / mass balance ---------- */
+  let mHM=FeMet+FeScrap+FeOin*MW.Fe/MW.FeO, mSlag=1.6*mGangue, SiEqLast=0;
+  let mC=0,mLime=0,mDolo=0,slag={},metal={},slagW={},metalW={};
+  let f1={},f2={},res=1;
+
+  for(let it=0;it<200;it++){
+    const guess=Object.keys(slagW).length?slagW:
+      norm({SiO2:36,CaO:39,Al2O3:14,MgO:8,MnO:0.4,TiO2:0.15,CaS:0.4});
+    const mGuess=Object.keys(metalW).length?metalW:
+      {C:I.Ctgt,Si:0.35,Mn:0.6,P:0.05,S:0.01};
+
+    /* silicon can never exceed what the silica in the slag can supply */
+    const SiAvail=(gangue.SiO2||0)*MW.Si/MW.SiO2*0.98;
+    /* Equilibrium silicon runs away above about 1525 degC, far beyond
+       anything an ESF taps. Bae and Park measured the cause: SiO2
+       reduction is sluggish and never reaches equilibrium.            */
+    const SiEqv=Math.max(0.002,Math.min(6,siEq(guess,mGuess,T)));
+    let Si=(I.siMode==="equilibrium")?Math.min(2.5,SiEqv)
+      :I.siCeil*(1-Math.exp(-SiEqv/I.siCeil));
+    Si=Math.min(Si,(SiFromScrap+SiAvail)/Math.max(mHM,1)*100);
+    const MnIn=(gangue.MnO||0)*MW.Mn/MW.MnO;
+    /* Manganese is bounded both ways: equilibrium would strip it all,
+       but industrial open-bath slag carries 0.15-0.30 wt% MnO.        */
+    SiEqLast=SiEqv;
+    const MnPot=MnIn/Math.max(mHM,1)*100;
+    const Mn=(I.siMode==="equilibrium")
+      ? Math.min(MnPot,Math.max(mnEq(guess,mGuess,T),0.90*MnPot))
+      : Math.min(0.80*MnPot,Math.max(mnEq(guess,mGuess,T),0.55*MnPot));
+    const fTi=Math.max(0.02,Math.min(0.92,0.70+0.30*(T-1773.15)/60));
+    const mTi=(gangue.TiO2||0)*fTi*MW.Ti/MW.TiO2;
+    const mP=(gangue.P2O5||0)*0.98*2*MW.P/MW.P2O5+PFromScrap;
+    const mSi=Math.max(SiFromScrap,Si/100*mHM);
+    const mMn=Math.max(MnFromScrap,Mn/100*mHM);
+    const FeRed=(gangue.FeO||0)*0.995*MW.Fe/MW.FeO;
+    const mCdis=I.Ctgt/100*mHM;
+
+    /* carbon: reduction + carburising, less what the charge already has */
+    /* only what is actually reduced out of the slag consumes carbon */
+    const Creq=(gangue.FeO||0)*0.995*MW.C/MW.FeO + mCdis
+      + Math.max(0,mSi-SiFromScrap)*2*MW.C/MW.Si
+      + Math.max(0,mMn-MnFromScrap)*MW.C/MW.Mn
+      + mTi*2*MW.C/MW.Ti
+      + Math.max(0,mP-PFromScrap)*2.5*MW.C/MW.P
+      - CinDRI - CinScrap;
+    mC=Math.max(0,Creq)/(cs.C/100)/(I.cYield/100);
+    const Sin=mDRI*(dri.S||0)/100+mScrap*SCRAP.S/100+mC*(cs.S||0)/100;
+
+    /* slag constituents that do not come from the flux */
+    const SiO2ash=mC*(cs.ash_SiO2||0)/100, Al2O3ash=mC*(cs.ash_Al2O3||0)/100;
+    const SiO2core=Math.max(1e-6,(gangue.SiO2||0)
+      -Math.max(0,mSi-SiFromScrap)*MW.SiO2/MW.Si+SiO2ash);
+    const Al2O3core=(gangue.Al2O3||0)+Al2O3ash;
+    const MnOr=Math.max(0,(gangue.MnO||0)-mMn*MW.MnO/MW.Mn);
+    const TiO2r=Math.max(0,(gangue.TiO2||0)-mTi*MW.TiO2/MW.Ti);
+    /* practical residual FeO: equilibrium is ~nil at ESF carbon levels,
+       but industrial slag is reported at 0.6-0.7 wt%                   */
+    const FeOfloor=(I.siMode==="equilibrium")?0:(I.FeOfloor||0)/100;
+    const FeOr=Math.min(gangue.FeO||0,
+      Math.max((gangue.FeO||0)*0.005,
+               FeOfloor*(SiO2core+Al2O3core+(gangue.CaO||0)+(gangue.MgO||0)
+                         +200)/Math.max(1-FeOfloor,0.5)));
+    const P2O5r=(gangue.P2O5||0)*0.02;
+
+    /* --- flux: both targets solved exactly, in one linear system -----
+       CaO :  CaO_g + m1 c1 + m2 c2 = B2 (SiO2_g + m1 s1 + m2 s2)
+       MgO :  MgO_g + m1 g1 + m2 g2 = x  (S_base + m1 b1 + m2 b2)
+       Writing the slag growth explicitly is what stops the iteration
+       running away when a flux cannot actually deliver the MgO target. */
+    const x=Math.min(0.60,Math.max(0,I.MgO/100));
+    const y1=fluxYield(I.flux1||"Burnt lime"), y2=fluxYield(I.flux2||"Dolomitic lime");
+    const S_base=SiO2core+Al2O3core+(gangue.CaO||0)+(gangue.MgO||0)
+      +MnOr+TiO2r+FeOr+P2O5r;
+    const a11=y1.CaO-I.B2*y1.SiO2, a12=y2.CaO-I.B2*y2.SiO2;
+    const bb1=I.B2*SiO2core-(gangue.CaO||0);
+    const a21=y1.MgO-x*y1.total,  a22=y2.MgO-x*y2.total;
+    const bb2=x*S_base-(gangue.MgO||0);
+    const det=a11*a22-a12*a21;
+    const FLUX_MAX=1.2*1000;
+    let L=0,Dm=0,mgoOK=true;
+    if(Math.abs(det)>1e-9){L=(bb1*a22-a12*bb2)/det; Dm=(a11*bb2-bb1*a21)/det;}
+    if(!(L>=0&&Dm>=0&&Math.abs(det)>1e-9&&L+Dm<FLUX_MAX)){
+      mgoOK=false; L=0; Dm=0; let best=null;
+      [["1",y1],["2",y2]].forEach(([tag,y])=>{
+        const den=y.CaO-I.B2*y.SiO2;
+        if(den>1e-6){const m=Math.max(0,bb1/den);
+          if(m<FLUX_MAX&&(best===null||m<best[1]))best=[tag,m];}});
+      if(best===null)
+        throw new Error("Neither '"+(I.flux1||"Burnt lime")+"' nor '"+
+          (I.flux2||"Dolomitic lime")+"' can raise the slag basicity to B2 = "+
+          I.B2.toFixed(2)+": both are acid (silica- or alumina-bearing). "+
+          "Choose a lime, limestone, dolomitic or magnesian flux for at "+
+          "least one of the two flux slots.");
+      if(best[0]==="1")L=best[1]; else Dm=best[1];
+    }
+    if(!mgoOK)warn("Target slag MgO of "+I.MgO.toFixed(1)+" wt% cannot be met "+
+      "together with basicity using "+(I.flux1||"Burnt lime")+" and "+
+      (I.flux2||"Dolomitic lime")+". Basicity has been honoured and the MgO "+
+      "target dropped; use a dolomitic or magnesian flux to control both.");
+    mLime=L; mDolo=Dm;
+    f1=splitFlux(I.flux1||"Burnt lime",mLime);
+    f2=splitFlux(I.flux2||"Dolomitic lime",mDolo);
+
+    const CaO=(gangue.CaO||0)+f1.CaO+f2.CaO;
+    const MgO=(gangue.MgO||0)+f1.MgO+f2.MgO;
+    const SiO2=SiO2core+f1.SiO2+f2.SiO2;
+    const Al2O3=Al2O3core+f1.Al2O3+f2.Al2O3;
+
+    const TiO2s=TiO2r+(f1.TiO2||0)+(f2.TiO2||0);
+    const trial=norm({SiO2:SiO2,CaO:CaO,MgO:MgO,Al2O3:Al2O3,FeO:FeOr,
+      MnO:MnOr,TiO2:TiO2s,P2O5:P2O5r});
+    const Ls=LS(trial,Ts);
+    const Sm=Sin/(1+Ls*mSlag/Math.max(mHM,1)), Ss=Sin-Sm;
+
+    slag={SiO2:SiO2,CaO:CaO,MgO:MgO,Al2O3:Al2O3,FeO:FeOr,
+      MnO:MnOr,TiO2:TiO2s,P2O5:P2O5r,CaS:Ss*MW.CaS/MW.S};
+    metal={Fe:FeMet+FeScrap+FeRed,C:mCdis,Si:mSi,Mn:mMn,P:mP,S:Sm,Ti:mTi};
+
+    const mHMn=sum(metal), mSlagN=sum(slag);
+    res=Math.abs(mHMn-mHM)/Math.max(mHM,1)+
+        Math.abs(mSlagN-mSlag)/Math.max(mSlagN,1);
+    mHM=0.5*mHM+0.5*mHMn; mSlag=0.5*mSlag+0.5*mSlagN;
+    slagW=norm(slag); metalW=norm(metal);
+    if(res<1e-9)break;
+  }
+
+  /* ---- gas, dust ---------------------------------------------------- */
+  const FeOred=(gangue.FeO||0)*0.995;
+  const nCO=FeOred/MW.FeO+metal.Si*2/MW.Si+metal.Mn/MW.Mn
+    +metal.Ti*2/MW.Ti+metal.P*2.5/MW.P;
+  const gas={CO:nCO*MW.CO,CO2:(f1.CO2||0)+(f2.CO2||0),
+    H2O:(f1.H2O||0)+(f2.H2O||0)+mC*(cs.H2O||0)/100};
+  const Cun=Math.max(0,mC*cs.C/100-(nCO*MW.C+metal.C-CinDRI-CinScrap));
+  const dust={C:Cun};
+
+  /* ---- energy -------------------------------------------------------
+     Terms are built once, here, and handed to the UI, so the heat-balance
+     table can never drift from the numbers the solver actually used.   */
+  const terms={
+    "Hot metal, sensible + fusion":
+      (FeMet+FeOred*MW.Fe/MW.FeO)*(hFeLiq(T)-hFeSolid(Tdri))
+      + FeScrap*(hFeLiq(T)-hFeSolid(298.15)),
+    "Carbon, heating + dissolution": metal.C*(hCgr(T)+DH_C_DISS),
+    "Silicon dissolution": metal.Si*DH_SI_DISS,
+    "Slag, sensible + latent + superheat":
+      mSlag*hSlag(slagW,Ts)-mGangue*hOxSolid(slagW,Tdri),
+    "Oxide reduction endotherms":
+      FeOred*DH.FeO+Math.max(0,metal.Si-SiFromScrap)*DH.Si
+      +Math.max(0,metal.Mn-MnFromScrap)*DH.Mn
+      +metal.Ti*DH.Ti+Math.max(0,metal.P-PFromScrap)*DH.P,
+    "Off-gas and dust, sensible":
+      (gas.CO*1.15+gas.CO2*1.24+gas.H2O*2.30)*(Tg-298.15)
+      + dust.C*hCgr(Tg),
+    /* A carbonate flux is charged as the carbonate, not as the calcined
+       oxide, so the furnace pays the calcination endotherm and boils off
+       the free moisture.  Omitting this made limestone look cheaper than
+       burnt lime, which is backwards.                                  */
+    "Flux calcination and moisture":
+      calcineHeat(I.flux1||"Burnt lime",mLime,Tg,false)
+      + calcineHeat(I.flux2||"Dolomitic lime",mDolo,Tg,false),
+  };
+  let Q=0; for(const kk in terms)Q+=terms[kk];              /* kJ/basis */
+
+  const QpT=Q/(mHM/1000);                                     /* kJ/tHM   */
+  const SECrev=QpT/3600, SECeq=SECrev/ETA_TH;
+
+  const hl=heatLoss(I.G,Ts,T,Tg,slagW);
+  let Qloss;
+  if(I.hlMode==="geometry")
+    Qloss=hl.Qtot*3600/(Math.max(I.prod,1)*1000);             /* kJ/tHM   */
+  else
+    Qloss=QpT*I.hlFrac/(1-I.hlFrac);
+  const SECop=(QpT+Qloss)/3600/I.etaEl;
+  const P_MW=SECop*I.prod/1000;
+  const el=electrical(I.G,slagW,Ts,I.G.imm,I.G.arc,P_MW);
+
+  const elCons=el.kgMWh*SECop/1000;
+  const co2d=(gas.CO*MW.CO2/MW.CO+gas.CO2)/(mHM/1000)/1000;
+  const co2i=SECop/1000*I.gef/1000;
+  const opex=SECop/1000*I.pPow+mC/(mHM/1000)/1000*I.pCarb
+    +(mLime+mDolo)/(mHM/1000)/1000*I.pLime+elCons/1000*I.pEl;
+
+  const termsMJ={};
+  for(const kk in terms)termsMJ[kk]=terms[kk]/1000/(mHM/1000);
+  termsMJ["Refractory + shell loss"]=Qloss/1000;
+
+  const valor=slagCementScore(slagW);
+  return {warnings,valor,SiEq:SiEqLast,mDRI,mScrap,mC,mLime,mDolo,mHM,mSlag,
+    mGangue,FeOred,
+    slag,slagW,metal,metalW,gas,dust,Q,QpT,terms,termsMJ,
+    SECrev,SECeq,SECop,Qloss,hl,el,P_MW,elCons,
+    co2d,co2i,opex,T,Ts,Tg,res,
+    KPI:{
+      "SEC reversible (kWh/tHM)":SECrev,
+      "SEC equilibrium basis (kWh/tHM)":SECeq,
+      "SEC operating (kWh/tHM)":SECop,
+      "Lining loss (kWh/tHM)":Qloss/3600,
+      "Slag rate (kg/tHM)":mSlag/(mHM/1000),
+      "Carbon charged (kg/tHM)":mC/(mHM/1000),
+      "Flux rate (kg/tHM)":(mLime+mDolo)/(mHM/1000),
+      "Metal yield (%)":mHM/(mDRI+mScrap)*100,
+      "Electrode (kg/tHM)":elCons,
+      "Power demand (MW)":P_MW,
+      "CO2 direct (t/tHM)":co2d,
+      "CO2 indirect (t/tHM)":co2i,
+      "CO2 total (t/tHM)":co2d+co2i,
+      "OPEX (USD/tHM)":opex}};
+}
+
+/* Score the tapped slag for reuse as a supplementary cementitious
+   material: basicity near 1 as in blast-furnace slag, low FeO, and free
+   MgO below saturation (free MgO hydrates with a volume expansion).   */
+function slagCementScore(sw){
+  const b=B2(sw), feo=sw.FeO||0, mgo=sw.MgO||0, al=sw.Al2O3||0;
+  const sat=4.0+7.5/Math.max(b,0.4)+0.08*al;
+  let sc=100; const notes=[];
+  if(!(b>=0.85&&b<=1.30)){sc-=45;
+    notes.push("basicity B2 = "+b.toFixed(2)+" is outside the 0.85-1.30 band "+
+      "that makes ESF slag behave like blast-furnace slag");}
+  if(feo>2.0){sc-=Math.min(35,(feo-2)*9);
+    notes.push("FeO = "+feo.toFixed(1)+" wt% costs iron yield and reduces "+
+      "hydraulic activity");}
+  if(mgo>sat){sc-=Math.min(35,(mgo-sat)*12);
+    notes.push("MgO = "+mgo.toFixed(1)+" wt% exceeds the estimated "+
+      "saturation of "+sat.toFixed(1)+" wt%: free MgO hydrates to Mg(OH)2 "+
+      "with a volume expansion that cracks cement products");}
+  sc=Math.max(0,Math.min(100,sc));
+  return {B2:b,FeO:feo,MgO:mgo,sat:sat,freeMgO:mgo>sat,score:sc,
+    verdict:sc>=75?"suitable as an SCM":(sc>=50?"marginal, needs adjustment"
+      :"not suitable without treatment"),notes:notes};
+}
+
+/* ============================== DYNAMIC MODEL ======================== */
+function solveDynamic(I,D){
+  const dri=norm(Object.assign({},I.driComp)), cs=CARB[I.carbon];
+  const MR=I.MR/100, G=I.G, dt=D.dt;
+  const n=Math.round(D.dur*60/dt), logEvery=Math.max(1,Math.round(60/dt));
+  let metal={}, slag={}, pile={}, char=0;
+  const m0=D.m0*1000, s0=D.s0*1000;
+  const mc0=norm({Fe:95.4,C:3.6,Si:0.35,Mn:0.55,P:0.06,S:0.025,Ti:0.015});
+  const sc0=norm({SiO2:34,CaO:37.5,Al2O3:13.5,MgO:8,FeO:3.5,MnO:1,TiO2:0.4,
+    CaS:0.6});
+  for(const k in mc0)metal[k]=mc0[k]/100*m0;
+  for(const k in sc0)slag[k]=sc0[k]/100*s0;
+  let Tm=D.Tm0+273.15, Ts=D.Ts0+273.15, Tg=1773.15, Tp=I.Tdri+273.15;
+  let hl=null, hlT=-1e9, IT=0;
+  const cum={E:0,mt:0,st:0,mp:0,sp:0,dri:0,C:0,flux:0,CO2:0,el:0};
+  let nMT=D.mtFirst, nST=D.stFirst, mtUntil=-1, stUntil=-1, mtR=0, stR=0;
+  const ev=[], keys=["t","Tm","Ts","Tg","Tp","mM","mS","mP","char","P","Pj",
+    "Pa","loss","melt","I","V","R","sig","C","Si","Mn","P_","S","FeO","SiO2",
+    "CaO","MgO","Al2O3","MnO","B2","B3","visc","liq","sh","frz","shell",
+    "SEC","tapM","tapS","slagRate","CO","CO2i","rFeO","rSi","rMn","rC",
+    "wall","roof","hearth"];
+  const T={}; keys.forEach(k=>T[k]=[]);
+  const alarms={};
+  function logEv(t,type,msg,extra){ev.push({t:t,clock:clock(t),type:type,
+    message:msg,detail:extra||""});}
+  function clock(t){const h=Math.floor(t/60),m=Math.floor(t%60),
+    s=Math.floor((t*60)%60);
+    return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+
+      String(s).padStart(2,"0");}
+  function fire(k,cond,type,msg,t,extra){
+    if(cond&&!alarms[k])logEv(t,type,msg,extra); alarms[k]=cond;}
+
+  logEv(0,"FEED","Campaign started - "+I.driName+", MR "+I.MR.toFixed(1)+
+    " %, DRI "+D.dri.toFixed(0)+" t/h, rated "+D.P.toFixed(0)+" MW","");
+
+  for(let step=0;step<=n;step++){
+    const t=step*dt, tmin=t/60;
+    let mS=Math.max(1,sum(slag)), mM=Math.max(1,sum(metal));
+    let mP=sum(pile);
+    let sw=norm(slag), mw=norm(metal);
+
+    /* --- lining (quasi-steady) --- */
+    if(tmin-hlT>=5||!hl){hl=heatLoss(G,Ts,Tm,Tg,sw);hlT=tmin;}
+
+    /* --- power --- */
+    const chargeKgS=(D.dri*(1+(D.cRate+D.limeRate+D.doloRate)/1000))*1000/3600;
+    const Pff=(chargeKgS*1.15+hl.Qtot/1e6)/0.92;
+    const errT=(D.Tset+273.15)-Tm;
+    IT=Math.max(-2e4,Math.min(2e4,IT+errT*dt));
+    let Pset=D.ctrl==="temperature"?
+      Math.max(0.35*D.P,Math.min(D.P,Pff+1.10*errT+2.0e-4*IT)):D.P;
+    const rhoS=slagDens(sw,Ts);
+    const dSlag=mS/Math.max(rhoS*G.L*G.W,1e-6);
+    const imm=Math.max(0.10,Math.min(0.75*dSlag,G.imm));
+    const el=electrical(G,sw,Ts,imm,G.arc,Pset);
+    const Pbath=el.Pbath*1e6*0.92, Pfb=el.Pfb*1e6;
+    cum.E+=el.P*1e6*dt; cum.el+=el.kgMWh*el.P*dt/3600;
+
+    /* --- feed --- */
+    const driKg=D.dri*1000/3600*dt, cKg=driKg*D.cRate/1000,
+      limeKg=driKg*D.limeRate/1000, doloKg=driKg*D.doloRate/1000;
+    for(const k in dri){const m=driKg*dri[k]/100;
+      if(k==="Fe"){pile.Femet=(pile.Femet||0)+m*MR;
+        pile.FeO=(pile.FeO||0)+m*(1-MR)*MW.FeO/MW.Fe;}
+      else pile[k]=(pile[k]||0)+m;}
+    pile.Csol=(pile.Csol||0)+cKg*cs.C/100;
+    pile.SiO2=(pile.SiO2||0)+cKg*(cs.ash_SiO2||0)/100;
+    pile.Al2O3=(pile.Al2O3||0)+cKg*(cs.ash_Al2O3||0)/100;
+    pile.S=(pile.S||0)+cKg*(cs.S||0)/100;
+    pile.CaO=(pile.CaO||0)+limeKg*0.94+doloKg*0.57;
+    pile.MgO=(pile.MgO||0)+limeKg*0.012+doloKg*0.38;
+    pile.SiO2=(pile.SiO2||0)+limeKg*0.015+doloKg*0.015;
+    const CO2calc=(limeKg*0.02+doloKg*0.02)*MW.CO2/MW.CaCO3;
+    cum.dri+=driKg/1000; cum.C+=cKg/1000; cum.flux+=(limeKg+doloKg)/1000;
+
+    /* --- pile melting --- */
+    mP=sum(pile);
+    const Apile=Math.min(0.60*G.L*G.W,Math.max(5,mP/500));
+    const Qconv=2000*Apile*Math.max(0,Ts-Tp);
+    const Qrad=0.85*SIGMA*Apile*(Math.pow(Math.max(Tg,Tp),4)-Math.pow(Tp,4))
+      +Pfb*Math.min(0.6,Apile/(G.L*G.W));
+    let Qp=Qconv+Qrad;
+    const cpP=900, Tsoft=1723.15, mNew=driKg+cKg+limeKg+doloKg;
+    const Tfeed=mNew>1e-9?((driKg*(I.Tdri+273.15)+(mNew-driKg)*298.15)/mNew):Tp;
+    Tp=mP>1e-6?(((mP-mNew)*Tp+mNew*Tfeed)/mP):Tfeed;
+    Tp=Math.max(298.15,Math.min(Tsoft,Tp));
+    const Qav=Qp*dt, dhS=Math.max(3.2e5,cpP*(Tsoft-Tp)+3.2e5);
+    let melt=Math.min(mP,Qav/dhS);
+    const Ep=mP*cpP*(Tp-298.15)+Qav-melt*(cpP*(Tsoft-298.15)+3.2e5);
+    Tp=Math.max(298.15,Math.min(Tsoft,298.15+Ep/(Math.max(1e-6,mP-melt)*cpP)));
+    const f=melt/Math.max(mP,1e-9);
+    const melted={}; for(const k in pile){melted[k]=pile[k]*f;pile[k]-=melted[k];}
+    metal.Fe=(metal.Fe||0)+(melted.Femet||0);
+    cum.mp+=(melted.Femet||0)/0.955/1000; delete melted.Femet;
+    char+=(melted.Csol||0); delete melted.Csol;
+    const Smelt=melted.S||0; delete melted.S;
+    for(const k in melted){if(melted[k]>0){slag[k]=(slag[k]||0)+melted[k];
+      cum.sp+=melted[k]/1000;}}
+    if(Smelt>0)slag.CaS=(slag.CaS||0)+Smelt*MW.CaS/MW.S;
+
+    mS=Math.max(1,sum(slag)); mM=Math.max(1,sum(metal));
+    sw=norm(slag); mw=norm(metal);
+    const rhoM=metalDens(mw,Tm), eta=slagVisc(sw,Ts), Asm=G.L*G.W;
+    /* solid carbon floats on the slag; only part is in useful contact */
+    const Achar=6*char/(2000*D.dp/1000)*(D.cEff!==undefined?D.cEff:0.55);
+
+    /* --- kinetics --- */
+    const CFeO=(sw.FeO||0)/100*rhoS/MW.FeO;
+    const kF=D.kFeO*Math.exp(-1.55e5/(8.3145*Ts));
+    const kCh=D.kChar*Math.exp(-1.60e5/(8.3145*Ts));
+    const drive=Math.max(0,1-0.02/Math.max((sw.FeO||0)/100,1e-6));
+    const nFeO=(kF*Asm+kCh*Achar)*CFeO*drive;
+    let mFeO=Math.min((slag.FeO||0)*0.5, nFeO*MW.FeO*dt,
+      (char+0.3*(metal.C||0))*MW.FeO/MW.C);
+    mFeO=Math.max(0,mFeO);
+
+    const SiE=siEq(sw,mw,Tm), kSi=D.kSi*Math.exp(-1.90e5/(8.3145*Ts));
+    let mSi=kSi*Asm*rhoM*(SiE-(mw.Si||0))/100*dt;
+    mSi=Math.max(-0.25*(metal.Si||0),Math.min(mSi,(slag.SiO2||0)*0.05*
+      MW.Si/MW.SiO2));
+    const MnE=mnEq(sw,mw,Tm), kMn=D.kMn*Math.exp(-1.80e5/(8.3145*Ts));
+    let mMn=kMn*Asm*rhoM*(MnE-(mw.Mn||0))/100*dt;
+    mMn=Math.max(-0.25*(metal.Mn||0),Math.min(mMn,(slag.MnO||0)*0.20*
+      MW.Mn/MW.MnO));
+    const Cs=cSat(Tm-273.15,mw), kCd=D.kC*Math.exp(-1.10e5/(8.3145*Tm));
+    let mCd=kCd*Achar*rhoM*Math.max(0,(Cs-(mw.C||0))/100)*dt;
+    mCd=Math.min(mCd,Math.max(0,char-mFeO*MW.C/MW.FeO)*0.6);
+
+    if(mFeO>0){slag.FeO-=mFeO;
+      const FeN=mFeO*MW.Fe/MW.FeO; metal.Fe=(metal.Fe||0)+FeN;
+      cum.mp+=FeN/0.955/1000; cum.sp-=mFeO/1000;
+      const Cu=mFeO*MW.C/MW.FeO, fc=Math.min(char,Cu); char-=fc;
+      metal.C=Math.max(0,(metal.C||0)-(Cu-fc));}
+    if(mSi!==0){slag.SiO2=Math.max(0,(slag.SiO2||0)-mSi*MW.SiO2/MW.Si);
+      metal.Si=Math.max(0,(metal.Si||0)+mSi);
+      metal.C=Math.max(0,(metal.C||0)-2*mSi*MW.C/MW.Si);}
+    if(mMn!==0){slag.MnO=Math.max(0,(slag.MnO||0)-mMn*MW.MnO/MW.Mn);
+      metal.Mn=Math.max(0,(metal.Mn||0)+mMn);
+      metal.C=Math.max(0,(metal.C||0)-mMn*MW.C/MW.Mn);}
+    if(mCd>0){char-=mCd; metal.C=(metal.C||0)+mCd;}
+    if((slag.P2O5||0)>0){const dP=slag.P2O5*Math.min(1,dt/600);
+      slag.P2O5-=dP; metal.P=(metal.P||0)+dP*2*MW.P/MW.P2O5;}
+    if((slag.TiO2||0)>0){const fTi=Math.max(0,Math.min(0.9,
+        0.70+0.30*(Tm-1773.15)/60));
+      const dTi=slag.TiO2*fTi*Math.min(1,dt/3000);
+      slag.TiO2-=dTi; metal.Ti=(metal.Ti||0)+dTi*MW.Ti/MW.TiO2;}
+    /* sulphur */
+    {const Ls=LS(sw,Ts), Sm=metal.S||0,
+       Ss=(slag.CaS||0)*MW.S/MW.CaS, St=Sm+Ss;
+     const Se=St/(1+Ls*mS/Math.max(mM,1));
+     const r=Math.min(1,dt/300), Sn=Sm+r*(Se-Sm);
+     metal.S=Math.max(0,Sn); slag.CaS=Math.max(0,(St-Sn)*MW.CaS/MW.S);}
+
+    /* --- gas & energy --- */
+    const nCO=mFeO/MW.FeO+Math.max(0,mSi)*2/MW.Si+Math.max(0,mMn)/MW.Mn;
+    const COv=nCO/dt*22.414e-3*3600;
+    const Qpc=nCO*D.pcr*282400/dt;
+    const CO2kg=nCO*D.pcr*MW.CO2+CO2calc; cum.CO2+=CO2kg;
+
+    const kS=slagK(sw,Ts), cpS=1.20e3, cpM=820;
+    const hsm=Math.max(300,180+40*Math.min(2,COv/4000));
+    const Qsm=hsm*Asm*(Ts-Tm);
+    let dHr=mFeO/MW.FeO*152000+Math.max(0,mSi)/MW.Si*689000
+      +Math.max(0,mMn)/MW.Mn*275000+mCd/MW.C*22590; dHr/=dt;
+    const ThfRoof=hl.zones.roof.Thot;
+    /* Radiation leaving the open slag bath towards the cooled roof and
+       upper sidewall.  At steady state whatever the panels remove must
+       have arrived either from the bath or from the brush arcs, so the
+       slag-side debit is the panel duty less the arc's own radiation.
+       The grey-body estimate is kept as an upper bound.                 */
+    const Qrad0=Math.max(0,0.85*SIGMA*(G.L*G.W)*(Math.pow(Ts,4)-
+      Math.pow(ThfRoof,4))/1.30);
+    const Qopen=Math.max(0,Math.min(Qrad0,
+      hl.zones.roof.Q+hl.zones.freeboard.Q-Pfb));
+    const Qoff=nCO/dt*MW.CO*1150*(Tg-298.15)+CO2calc/dt*1240*(Tg-298.15);
+
+    Ts+=(Pbath-Qsm-hl.zones.slag_wall.Q-Qopen-Qp-dHr)*dt/
+      Math.max(mS*cpS,1e3);
+    Tm+=(Qsm-hl.zones.metal_wall.Q-hl.zones.hearth.Q)*dt/
+      Math.max(mM*cpM,1e3);
+    const mgs=Math.max(0.05,nCO/dt*MW.CO+CO2calc/dt+45*1.29/3600*D.dri);
+    const dTpc=Math.min(150,Qpc/Math.max(mgs*1200,1e3));
+    const Tgt=0.5*Ts+0.5*ThfRoof+dTpc;
+    Tg+=Math.max(-20,Math.min(20,0.25*(Tgt-Tg)));
+    Tg=Math.max(873,Math.min(2673,Tg));
+    Ts=Math.max(1573,Math.min(2473,Ts)); Tm=Math.max(1573,Math.min(2373,Tm));
+
+    /* --- tapping --- */
+    if(tmin>=nMT&&mtUntil<tmin){mtUntil=tmin+D.mtDur;
+      mtR=D.mtMass*1000/(D.mtDur*60); nMT+=D.mtInt;
+      logEv(tmin,"TAP-METAL","Metal tap opened - target "+D.mtMass+" t over "+
+        D.mtDur+" min","T="+ (Tm-273.15).toFixed(0)+" degC, C="+
+        (norm(metal).C||0).toFixed(2)+" wt%");}
+    if(tmin>=nST&&stUntil<tmin){stUntil=tmin+D.stDur;
+      stR=D.stMass*1000/(D.stDur*60); nST+=D.stInt;
+      logEv(tmin,"TAP-SLAG","Slag tap opened - target "+D.stMass+" t over "+
+        D.stDur+" min","B2="+B2(norm(slag)).toFixed(2)+", FeO="+
+        (norm(slag).FeO||0).toFixed(2)+" wt%");}
+    if(tmin<mtUntil&&mM>60e3){const take=Math.min(mtR*dt,mM-60e3),
+      fr=take/mM; for(const k in metal)metal[k]*=(1-fr); cum.mt+=take/1000;}
+    else if(mtUntil>0&&tmin>=mtUntil){logEv(mtUntil,"TAP-METAL",
+      "Metal tap-hole closed","cumulative "+cum.mt.toFixed(1)+" t");mtUntil=-1;}
+    if(tmin<stUntil&&mS>80e3){const take=Math.min(stR*dt,mS-80e3),
+      fr=take/mS; for(const k in slag)slag[k]*=(1-fr); cum.st+=take/1000;}
+    else if(stUntil>0&&tmin>=stUntil){logEv(stUntil,"TAP-SLAG",
+      "Slag tap-hole closed","cumulative "+cum.st.toFixed(1)+" t");stUntil=-1;}
+
+    /* --- alarms --- */
+    const swn=norm(slag), mwn=norm(metal), Tl=slagLiquidus(swn);
+    fire("cold",Ts-Tl<40,"ALARM","Slag superheat below 40 K - freeze-up and "+
+      "tap-hole risk",tmin,"superheat "+(Ts-Tl).toFixed(0)+" K");
+    fire("mcold",Tm-273.15<1440,"ALARM","Hot metal below 1440 degC - raise "+
+      "power",tmin,(Tm-273.15).toFixed(0)+" degC");
+    fire("mhot",Tm-273.15>1545,"WARNING","Hot metal above 1545 degC - "+
+      "refractory wear and Si pickup",tmin,(Tm-273.15).toFixed(0)+" degC");
+    fire("feo",(swn.FeO||0)>8,"ALARM","Slag FeO above 8 wt% - iron loss and "+
+      "refractory attack",tmin,(swn.FeO||0).toFixed(2)+" wt%");
+    fire("b2l",B2(swn)<0.90,"WARNING","Basicity below 0.90 - increase lime",
+      tmin,"B2 "+B2(swn).toFixed(2));
+    fire("b2h",B2(swn)>1.35,"WARNING","Basicity above 1.35 - short, viscous "+
+      "slag",tmin,"B2 "+B2(swn).toFixed(2));
+    fire("visc",eta>1.2,"WARNING","Slag viscosity above 1.2 Pa.s - poor "+
+      "stirring",tmin,eta.toFixed(2)+" Pa.s");
+    fire("pile",mP>260e3,"WARNING","Feed pile above 260 t - melting limited",
+      tmin,(mP/1000).toFixed(0)+" t");
+    fire("frz",hl.freeze<0.012,"ALARM","Freeze lining thinner than 12 mm",
+      tmin,(hl.freeze*1000).toFixed(0)+" mm");
+    fire("shell",hl.Tshell-273.15>220,"ALARM","Shell above 220 degC",tmin,
+      (hl.Tshell-273.15).toFixed(0)+" degC");
+
+    /* --- log --- */
+    if(step%logEvery===0){
+      const prod=Math.max(cum.mp,1e-3);
+      const row={t:tmin,Tm:Tm-273.15,Ts:Ts-273.15,Tg:Tg-273.15,Tp:Tp-273.15,
+        mM:mM/1000,mS:mS/1000,mP:mP/1000,char:char/1000,P:el.P,Pj:el.Pj,
+        Pa:el.Pa,loss:hl.Qtot/1e6,melt:melt/dt*3.6,I:el.I/1000,V:el.V,
+        R:el.Rop,sig:el.sigma,C:mwn.C||0,Si:mwn.Si||0,Mn:mwn.Mn||0,
+        P_:mwn.P||0,S:mwn.S||0,FeO:swn.FeO||0,SiO2:swn.SiO2||0,
+        CaO:swn.CaO||0,MgO:swn.MgO||0,Al2O3:swn.Al2O3||0,MnO:swn.MnO||0,
+        B2:B2(swn),B3:B3(swn),visc:eta,liq:Tl-273.15,sh:Ts-Tl,
+        frz:hl.freeze*1000,shell:hl.Tshell-273.15,
+        SEC:cum.E/3.6e6/prod,tapM:cum.mt,tapS:cum.st,
+        slagRate:cum.sp*1000/prod,CO:COv,CO2i:cum.CO2/1000/prod,
+        rFeO:mFeO/dt,rSi:mSi/dt,rMn:mMn/dt,rC:mCd/dt,
+        wall:(hl.zones.slag_wall.Q+hl.zones.metal_wall.Q+
+              hl.zones.freeboard.Q)/1e6,
+        roof:hl.zones.roof.Q/1e6,hearth:hl.zones.hearth.Q/1e6};
+      keys.forEach(k=>T[k].push(row[k]));
+    }
+  }
+  logEv(D.dur,"FEED","Campaign finished - "+cum.mt.toFixed(1)+" t hot metal, "+
+    cum.st.toFixed(1)+" t slag, "+(cum.E/3.6e9).toFixed(1)+" MWh","");
+  const last=k=>T[k][T[k].length-1];
+  const summary={
+    "Hot metal tapped (t)":cum.mt,"Hot metal produced (t)":cum.mp,
+    "Slag tapped (t)":cum.st,"Slag rate (kg/tHM)":last("slagRate"),
+    "Energy (MWh)":cum.E/3.6e9,"SEC (kWh/tHM)":last("SEC"),
+    "Mean power (MW)":T.P.slice(-Math.round(T.P.length/2))
+      .reduce((a,b)=>a+b,0)/Math.max(1,Math.round(T.P.length/2)),
+    "Mean lining loss (MW)":last("loss"),
+    "Heat loss share (%)":100*last("loss")/Math.max(last("P"),1e-6),
+    "Final C (wt%)":last("C"),"Final Si (wt%)":last("Si"),
+    "Final Mn (wt%)":last("Mn"),"Final S (wt%)":last("S"),
+    "Final slag FeO (wt%)":last("FeO"),"Final B2":last("B2"),
+    "Mean metal T (degC)":last("Tm"),"Freeze lining (mm)":last("frz"),
+    "Max shell T (degC)":Math.max.apply(null,T.shell),
+    "Electrode consumed (kg)":cum.el,
+    "CO2 intensity (t/tHM)":last("CO2i"),
+    "Productivity (tHM/h)":cum.mp/Math.max(D.dur/60,1e-6)};
+  return {T:T,events:ev,summary:summary,cum:cum,
+    metalW:norm(metal),slagW:norm(slag)};
+}
+</script>
+
+<script>
+/* ======================================================================
+   SVG SCHEMATIC  (mirrors esf_dt/schematic.py)
+   ====================================================================== */
+function ramp(v,lo,hi,c0,c1){
+  const f=hi<=lo?0:Math.max(0,Math.min(1,(v-lo)/(hi-lo)));
+  return "#"+c0.map((a,i)=>Math.round(a+(c1[i]-a)*f).toString(16)
+    .padStart(2,"0")).join("");}
+function nf(v,n){return (v==null||isNaN(v))?"-":
+  Number(v).toLocaleString(undefined,{minimumFractionDigits:n,
+    maximumFractionDigits:n});}
+
+function furnaceSVG(s){
+  const W=1180,H=780,g=(k,d)=>(s[k]!==undefined&&!isNaN(s[k]))?s[k]:d;
+  const Tm=g("Tm",1500),Ts=g("Ts",1560),Tg=g("Tg",1650),Tp=g("Tp",600);
+  const nEl=g("nEl",6),imm=g("imm",.45),arc=g("arc",.09),frz=g("frz",75);
+  const dm=g("dm",.9),ds=g("ds",1.35),pile=g("pile",0),alarm=s.alarm||"";
+  const x0=130,x1=858,top=200,bot=590;
+  const il=x0+34,ir=x1-34,it=top+26,ib=bot-44;
+  const usable=ib-it-96;
+  const hm=Math.max(14,usable*dm/(dm+ds+1.6));
+  const hs=Math.max(18,usable*ds/(dm+ds+1.6));
+  const ym=ib-hm, ysl=ym-hs, span=ir-il;
+  const P=[];
+  P.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;font-family:Inter,Segoe UI,Helvetica,Arial,sans-serif">`);
+  P.push(`<defs>
+   <linearGradient id="mg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${ramp(Tm,1400,1580,[196,92,20],[255,214,120])}"/><stop offset="100%" stop-color="#7a3a06"/></linearGradient>
+   <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${ramp(Ts,1440,1620,[128,44,24],[240,150,60])}"/><stop offset="100%" stop-color="#5c2410"/></linearGradient>
+   <linearGradient id="fb" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#22242e"/><stop offset="100%" stop-color="${ramp(Tg,1100,1800,[60,60,78],[150,70,60])}"/></linearGradient>
+   <radialGradient id="ag"><stop offset="0%" stop-color="#fffbe6"/><stop offset="55%" stop-color="#ffd166"/><stop offset="100%" stop-color="#ff8c1a" stop-opacity="0"/></radialGradient>
+   <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto"><path d="M0,0 L8,3.2 L0,6.4 z" fill="#1f4e79"/></marker>
+   <marker id="ar2" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto"><path d="M0,0 L8,3.2 L0,6.4 z" fill="#c1121f"/></marker>
+   <marker id="ar3" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto"><path d="M0,0 L8,3.2 L0,6.4 z" fill="#2a9d8f"/></marker></defs>`);
+  P.push(`<rect width="${W}" height="${H}" fill="#f7f8fa"/>`);
+  P.push(`<text x="26" y="34" font-size="19" font-weight="700" fill="#12263a">Electric Smelting Furnace (open slag bath) &#8212; live process schematic</text>`);
+  P.push(`<text x="26" y="54" font-size="11.5" fill="#5c6b7a">ESF-DT digital twin &#183; Extractmet Private Limited &#183; reference plant: Industry-X</text>`);
+  P.push(`<rect x="${x0}" y="${top}" width="${x1-x0}" height="${bot-top}" rx="12" fill="#cfd6dd" stroke="#8c99a6" stroke-width="2"/>`);
+  P.push(`<rect x="${x0+10}" y="${top+9}" width="${x1-x0-20}" height="${bot-top-18}" rx="9" fill="#e6ded2" stroke="#b9ad9c"/>`);
+  P.push(`<rect x="${x0+22}" y="${top+18}" width="${x1-x0-44}" height="${bot-top-34}" rx="6" fill="#d9c7ad" stroke="#b09a78"/>`);
+  P.push(`<rect x="${il}" y="${it}" width="${ir-il}" height="${ib-it}" fill="url(#fb)"/>`);
+  const fz=Math.max(2,Math.min(26,frz/5));
+  P.push(`<rect x="${il}" y="${ysl}" width="${fz}" height="${hs}" fill="#9fb8c8" stroke="#6d8c9e"/>`);
+  P.push(`<rect x="${ir-fz}" y="${ysl}" width="${fz}" height="${hs}" fill="#9fb8c8" stroke="#6d8c9e"/>`);
+  P.push(`<rect x="${il+fz}" y="${ysl}" width="${ir-il-2*fz}" height="${hs}" fill="url(#sg)"/>`);
+  P.push(`<rect x="${il}" y="${ym}" width="${ir-il}" height="${hm}" fill="url(#mg)"/>`);
+  P.push(`<line x1="${il}" y1="${ym}" x2="${ir}" y2="${ym}" stroke="#3b1c06" stroke-width="1.6"/>`);
+  P.push(`<text x="${il+10}" y="${ym+hm/2+4}" font-size="11.5" font-weight="600" fill="#2b1200">HOT METAL  ${nf(g("mM",0),1)} t &#183; ${Tm.toFixed(0)} &#176;C</text>`);
+  P.push(`<text x="${il+10}" y="${ysl+hs/2+4}" font-size="11.5" font-weight="600" fill="#2b1200">SLAG  ${nf(g("mS",0),1)} t &#183; ${Ts.toFixed(0)} &#176;C &#183; B2 ${nf(g("B2",1.1),2)}</text>`);
+  const yel=112, ew=Math.min(30,span/(nEl*2.4));
+  for(let k=0;k<nEl;k++){
+    const cx=il+span*(k+.5)/nEl;
+    const tip=ysl+Math.max(4,Math.min(hs-6,imm/Math.max(ds,.2)*hs));
+    const gap=Math.max(3,arc*90);
+    P.push(`<rect x="${cx-ew/2}" y="${yel}" width="${ew}" height="${tip-gap-yel}" rx="3" fill="#3b3b3b" stroke="#1c1c1c"/>`);
+    P.push(`<rect x="${cx-ew/2-4}" y="${yel+16}" width="${ew+8}" height="16" rx="3" fill="#b08d57" stroke="#7d6337"/>`);
+    P.push(`<ellipse cx="${cx}" cy="${tip-gap/2}" rx="${ew*.95}" ry="${gap*.95}" fill="url(#ag)"/>`);
+    P.push(`<text x="${cx}" y="${yel-7}" font-size="9.5" text-anchor="middle" fill="#12263a">E${k+1}</text>`);}
+  if(pile>0.02){
+    const pw=Math.max(48,Math.min(span*.42,30+pile*6)),px=il+span*.30;
+    const ph=Math.max(16,Math.min(58,10+pile*2));
+    P.push(`<path d="M${px-pw/2} ${ysl} Q ${px} ${ysl-ph} ${px+pw/2} ${ysl} Z" fill="#6b6257" stroke="#463f36"/>`);
+    P.push(`<text x="${px}" y="${ysl-ph-6}" font-size="10" text-anchor="middle" fill="#e8eef4">feed pile ${pile.toFixed(1)} t &#183; ${Tp.toFixed(0)} &#176;C</text>`);}
+  const feeds=[["DRI / HBI",g("fDRI",160),.16],["Carbon",g("fC",8.8),.30],
+    ["Flux",g("fFlux",17.4),.44]];
+  feeds.forEach((f,i)=>{const cx=il+span*f[2],yl=74+i*15;
+    P.push(`<line x1="${cx}" y1="${yl+4}" x2="${cx}" y2="${top-4}" stroke="#1f4e79" stroke-width="3" marker-end="url(#ar)"/>`);
+    P.push(`<text x="${cx+8}" y="${yl}" font-size="10" fill="#1f4e79">${f[0]} &#183; ${nf(f[1],1)} t/h</text>`);});
+  P.push(`<line x1="${ir-40}" y1="${top-4}" x2="${ir-40}" y2="72" stroke="#c1121f" stroke-width="3" marker-end="url(#ar2)"/>`);
+  P.push(`<text x="${ir-150}" y="66" font-size="10" fill="#c1121f">Off-gas ${nf(g("offgas",14000),0)} Nm&#179;/h &#183; ${Tg.toFixed(0)} &#176;C</text>`);
+  P.push(`<rect x="${x1-6}" y="${ym+hm*.45}" width="34" height="12" fill="#8a4b12" stroke="#4d2a08"/>`);
+  P.push(`<line x1="${x1+28}" y1="${ym+hm*.51}" x2="${x1+62}" y2="${ym+hm*.51+24}" stroke="#ffb347" stroke-width="6" stroke-linecap="round"/>`);
+  P.push(`<text x="${x1+2}" y="${ym+hm*.51+56}" font-size="10" fill="#8a4b12">Metal tap-hole</text>`);
+  P.push(`<rect x="${x0-28}" y="${ysl+hs*.35}" width="34" height="12" fill="#7a3a2a" stroke="#40190f"/>`);
+  P.push(`<line x1="${x0-28}" y1="${ysl+hs*.41}" x2="${x0-96}" y2="${ysl+hs*.41+34}" stroke="#e07a5f" stroke-width="6" stroke-linecap="round"/>`);
+  P.push(`<text x="${x0-96}" y="${ysl+hs*.41-8}" font-size="10" fill="#7a3a2a">Slag tap-hole</text>`);
+  P.push(`<text x="${x1+12}" y="${top+16}" font-size="10" fill="#2a9d8f">Cooling</text>`);
+  [top+34,top+74,top+114].forEach(y=>P.push(`<line x1="${x1+4}" y1="${y}" x2="${x1+52}" y2="${y}" stroke="#2a9d8f" stroke-width="2.4" marker-end="url(#ar3)"/>`));
+  P.push(`<text x="${x1+12}" y="${top+134}" font-size="10" fill="#2a9d8f">${nf(g("loss",30),1)} MW</text>`);
+  P.push(`<line x1="${x0-6}" y1="${it+26}" x2="${il+4}" y2="${it+26}" stroke="#5c6b7a"/>`);
+  P.push(`<text x="${x0-10}" y="${it+22}" font-size="10" text-anchor="end" fill="#5c6b7a">FREEBOARD</text>`);
+  P.push(`<text x="${x0-10}" y="${it+36}" font-size="10" text-anchor="end" fill="#5c6b7a">${Tg.toFixed(0)} &#176;C CO/CO&#8322;</text>`);
+  [["Steel shell","#cfd6dd"],["Safety lining","#e6ded2"],
+   ["Working refractory","#d9c7ad"],["Freeze lining","#9fb8c8"]]
+   .forEach((L,i)=>{const yy=bot+24+(i%2)*17,xo=Math.floor(i/2)*190;
+    P.push(`<rect x="${x0+xo}" y="${yy-10}" width="14" height="11" fill="${L[1]}" stroke="#8c99a6"/>`);
+    P.push(`<text x="${x0+xo+22}" y="${yy}" font-size="10" fill="#3c4a57">${L[0]}</text>`);});
+  const px0=946;
+  P.push(`<rect x="${px0}" y="104" width="212" height="534" rx="10" fill="#fff" stroke="#d5dbe1"/>`);
+  P.push(`<text x="${px0+14}" y="128" font-size="12.5" font-weight="700" fill="#12263a">LIVE KPIs</text>`);
+  const kpi=[["Active power",nf(g("P",0),1)+" MW"],["Slag Joule",nf(g("Pj",0),1)+" MW"],
+    ["Brush arc",nf(g("Pa",0),1)+" MW"],["Current",nf(g("I",0),1)+" kA"],
+    ["Tap voltage",nf(g("V",0),0)+" V"],["Lining loss",nf(g("loss",0),1)+" MW"],
+    ["SEC",nf(g("SEC",0),0)+" kWh/tHM"],["Slag rate",nf(g("slagRate",0),0)+" kg/tHM"],
+    ["[C]",nf(g("C",0),2)+" wt%"],["[Si]",nf(g("Si",0),3)+" wt%"],
+    ["[Mn]",nf(g("Mn",0),3)+" wt%"],["[P]",nf(g("P_",0),3)+" wt%"],
+    ["[S]",nf(g("S",0),3)+" wt%"],["(FeO)",nf(g("FeO",0),2)+" wt%"],
+    ["(SiO2)",nf(g("SiO2",0),1)+" wt%"],["(CaO)",nf(g("CaO",0),1)+" wt%"],
+    ["(Al2O3)",nf(g("Al2O3",0),1)+" wt%"],["(MgO)",nf(g("MgO",0),1)+" wt%"],
+    ["Shell T max",nf(g("shell",0),0)+" &#176;C"],["Hot face",nf(g("hotface",0),0)+" &#176;C"],
+    ["Freeboard T",nf(Tg,0)+" &#176;C"],["Feed pile",nf(pile,1)+" t"]];
+  kpi.forEach((k,i)=>{const yy=152+i*21.5;
+    P.push(`<text x="${px0+14}" y="${yy}" font-size="10.5" fill="#5c6b7a">${k[0]}</text>`);
+    P.push(`<text x="${px0+198}" y="${yy}" font-size="10.5" font-weight="600" text-anchor="end" fill="#12263a">${k[1]}</text>`);});
+  if(alarm){P.push(`<rect x="26" y="${H-48}" width="${W-52}" height="34" rx="7" fill="#fdecec" stroke="#c1121f"/>`);
+    P.push(`<text x="42" y="${H-26}" font-size="12" font-weight="600" fill="#c1121f">&#9888; ${alarm}</text>`);}
+  else{P.push(`<rect x="26" y="${H-48}" width="${W-52}" height="34" rx="7" fill="#eef7f2" stroke="#2a9d8f"/>`);
+    P.push(`<text x="42" y="${H-26}" font-size="12" fill="#1d6f63">All monitored variables inside the operating window.</text>`);}
+  P.push(`<text x="${x0}" y="${bot+96}" font-size="10.5" fill="#5c6b7a">Hearth ${nf(g("L",35),1)} m &#215; ${nf(g("Wd",11),1)} m &#183; slag depth ${ds.toFixed(2)} m &#183; metal depth ${dm.toFixed(2)} m &#183; freeze lining ${frz.toFixed(0)} mm</text>`);
+  P.push(`<text x="${x0}" y="${bot+112}" font-size="10.5" fill="#5c6b7a">${nEl} &#215; Soderberg electrodes, ${nf(g("dEl",1.7),2)} m dia &#183; immersion ${imm.toFixed(2)} m &#183; brush arc ${(arc*1000).toFixed(0)} mm &#183; ${nf(g("I",0),1)} kA at ${nf(g("V",0),0)} V</text>`);
+  P.push(`</svg>`);
+  return P.join("");
+}
+</script>
+
+<script>
+/* ======================================================================
+   CHART HELPERS (plain canvas)
+   ====================================================================== */
+const COL=["#1f4e79","#c1121f","#2a9d8f","#e07a5f","#6a4c93","#f4a261",
+  "#264653","#8ab17d","#b5179e","#457b9d"];
+function panel(ctx,x,y,w,h,title){
+  ctx.save();ctx.strokeStyle="#e3e8ec";ctx.fillStyle="#12263a";
+  ctx.font="600 11px Inter,Segoe UI,sans-serif";
+  ctx.fillText(title,x,y-6);ctx.strokeRect(x,y,w,h);ctx.restore();}
+function lineChart(ctx,x,y,w,h,title,xs,series,xlab,ylab){
+  panel(ctx,x,y,w,h,title);
+  let lo=Infinity,hi=-Infinity;
+  series.forEach(s=>s.v.forEach(v=>{if(isFinite(v)){lo=Math.min(lo,v);
+    hi=Math.max(hi,v);}}));
+  if(!isFinite(lo)){lo=0;hi=1;} if(hi-lo<1e-9){hi=lo+1;lo-=1;}
+  const pad=(hi-lo)*0.08; lo-=pad; hi+=pad;
+  const x0=Math.min.apply(null,xs), x1=Math.max.apply(null,xs);
+  const X=v=>x+8+(w-16)*(x1>x0?(v-x0)/(x1-x0):0.5);
+  const Y=v=>y+h-14-(h-24)*((v-lo)/(hi-lo));
+  ctx.save();ctx.strokeStyle="#f0f3f5";ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){const yy=y+8+(h-24)*i/4;
+    ctx.beginPath();ctx.moveTo(x+8,yy);ctx.lineTo(x+w-8,yy);ctx.stroke();}
+  ctx.fillStyle="#8b98a5";ctx.font="9px Inter,sans-serif";
+  ctx.fillText(hi.toPrecision(3),x+10,y+14);
+  ctx.fillText(lo.toPrecision(3),x+10,y+h-16);
+  ctx.restore();
+  series.forEach((s,i)=>{
+    ctx.save();ctx.strokeStyle=s.c||COL[i%COL.length];ctx.lineWidth=1.5;
+    ctx.beginPath();let started=false;
+    xs.forEach((xv,k)=>{const v=s.v[k];if(!isFinite(v))return;
+      if(!started){ctx.moveTo(X(xv),Y(v));started=true;}
+      else ctx.lineTo(X(xv),Y(v));});
+    ctx.stroke();ctx.restore();
+    ctx.save();ctx.fillStyle=s.c||COL[i%COL.length];
+    ctx.font="9px Inter,sans-serif";
+    ctx.fillText(s.n,x+w-8-ctx.measureText(s.n).width,y+14+i*11);
+    ctx.restore();});
+}
+function barChart(ctx,x,y,w,h,title,labels,values,colors){
+  panel(ctx,x,y,w,h,title);
+  const hi=Math.max.apply(null,values.concat([1e-9]))*1.12;
+  const bw=(w-24)/values.length;
+  values.forEach((v,i)=>{
+    const bh=(h-34)*Math.max(0,v)/hi;
+    ctx.fillStyle=(colors&&colors[i])||COL[i%COL.length];
+    ctx.fillRect(x+12+i*bw+bw*0.15,y+h-20-bh,bw*0.7,bh);
+    ctx.save();ctx.fillStyle="#5c6b7a";ctx.font="8.5px Inter,sans-serif";
+    ctx.translate(x+12+i*bw+bw*0.5,y+h-8);ctx.rotate(-0.35);
+    ctx.textAlign="right";ctx.fillText(labels[i],0,0);ctx.restore();
+    ctx.fillStyle="#12263a";ctx.font="9px Inter,sans-serif";
+    ctx.textAlign="center";
+    ctx.fillText(nf(v, v<10?2:0),x+12+i*bw+bw*0.5,y+h-24-bh);
+    ctx.textAlign="left";});
+}
+function hbarChart(ctx,x,y,w,h,title,labels,values){
+  panel(ctx,x,y,w,h,title);
+  const hi=Math.max.apply(null,values.concat([1e-9]))*1.25;
+  const bh=(h-24)/values.length;
+  values.forEach((v,i)=>{
+    const bw=(w-150)*Math.max(0,v)/hi;
+    ctx.fillStyle=COL[i%COL.length];
+    ctx.fillRect(x+130,y+10+i*bh+bh*0.18,bw,bh*0.62);
+    ctx.fillStyle="#5c6b7a";ctx.font="9px Inter,sans-serif";
+    ctx.fillText(labels[i],x+6,y+10+i*bh+bh*0.62);
+    ctx.fillStyle="#12263a";
+    ctx.fillText(nf(v,v<10?2:0),x+134+bw,y+10+i*bh+bh*0.62);});
+}
+function clear(cv){const ctx=cv.getContext("2d");
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.fillStyle="#fff";ctx.fillRect(0,0,cv.width,cv.height);return ctx;}
+</script>
+
+<script>
+/* ======================================================================
+   UI
+   ====================================================================== */
+const PAGES=[["schematic","Schematic"],["inputs","Inputs"],
+  ["mass","Mass balance"],["energy","Energy"],["props","Slag & metal"],
+  ["refr","Refractory"],["elec","Electrical"],["sweep","Parametric"],
+  ["dyn","Dynamic"],["traj","Trajectories"],["events","Event log"],
+  ["econ","Economics"],["help","Help"]];
+const nav=document.getElementById("nav");
+PAGES.forEach((p,i)=>{const b=document.createElement("button");
+  b.textContent=(i+1)+"  "+p[1];b.id="nav-"+p[0];
+  b.onclick=()=>go(p[0]);nav.appendChild(b);});
+function go(id){
+  PAGES.forEach(p=>{
+    document.getElementById("p-"+p[0]).classList.toggle("on",p[0]===id);
+    document.getElementById("nav-"+p[0]).classList.toggle("on",p[0]===id);});
+  if(id==="mass"||id==="energy"||id==="props"||id==="refr"||id==="elec"||
+     id==="econ") renderStatic();
+  if(id==="traj"&&DYN) renderTraj();
+}
+document.getElementById("nav-schematic").classList.add("on");
+
+/* ---- input definitions --------------------------------------------- */
+const DEF={driName:"DRI-A (13.8 % gangue)",MR:94,Tdri:600,scrap:0,
+  carbon:"Metallurgical coke",cYield:92,Ttap:1500,Ctgt:3.5,B2:1.10,MgO:8,
+  dTs:60,Tgas:1450,prod:143,L:35,W:11,nEl:6,dEl:1.70,pitch:4.60,imm:0.45,
+  arc:0.09,dSlag:1.35,dMetal:0.90,hFb:3.2,V:420,pf:0.86,etaEl:0.90,
+  hlMode:"geometry",hlFrac:0.10,pPow:55,pCarb:320,pLime:95,pEl:1150,gef:120,
+  siMode:"kinetic",siCeil:0.45,FeOfloor:0.65};
+let IN=Object.assign({},DEF);
+IN.driComp=Object.assign({},DRI[IN.driName]);
+
+function mkField(host,key,label,type,opts,unit,step){
+  const l=document.createElement("label");
+  l.innerHTML=`<span>${label}${unit?' <i class="pill">'+unit+'</i>':''}</span>`;
+  let w;
+  if(type==="select"){w=document.createElement("select");
+    opts.forEach(o=>{const e=document.createElement("option");
+      e.textContent=o;w.appendChild(e);});w.value=IN[key];}
+  else{w=document.createElement("input");w.type="number";w.value=IN[key];
+    if(step)w.step=step;}
+  w.onchange=()=>{IN[key]=(type==="select")?w.value:parseFloat(w.value);
+    if(key==="driName")IN.driComp=Object.assign({},DRI[IN.driName]),
+      renderDRI();
+    solveStatic();};
+  l.appendChild(w);host.appendChild(l);
+}
+function buildInputs(){
+  const F=document.getElementById("inFeed");F.innerHTML="";
+  mkField(F,"driName","DRI grade","select",Object.keys(DRI));
+  mkField(F,"MR","Metallisation","num",null,"%",0.5);
+  mkField(F,"Tdri","DRI charging temperature","num",null,"degC",25);
+  mkField(F,"scrap","Scrap in metallic charge","num",null,"wt%",5);
+  mkField(F,"carbon","Carburiser","select",Object.keys(CARB));
+  mkField(F,"cYield","Carburiser yield","num",null,"%",1);
+
+  const T=document.getElementById("inTarget");T.innerHTML="";
+  mkField(T,"Ttap","Tapping temperature","num",null,"degC",5);
+  mkField(T,"Ctgt","Target [C]","num",null,"wt%",0.1);
+  mkField(T,"B2","Target basicity B2","num",null,"",0.02);
+  mkField(T,"MgO","Target slag MgO","num",null,"wt%",0.5);
+  mkField(T,"dTs","Slag superheat","num",null,"K",5);
+  mkField(T,"Tgas","Off-gas temperature","num",null,"degC",25);
+  mkField(T,"prod","Design productivity","num",null,"tHM/h",1);
+
+  const G=document.getElementById("inGeo");G.innerHTML="";
+  [["L","Hearth length","m",0.5],["W","Hearth width","m",0.5],
+   ["nEl","Electrodes","",1],["dEl","Electrode diameter","m",0.05],
+   ["pitch","Electrode pitch","m",0.1],["imm","Immersion","m",0.01],
+   ["arc","Brush-arc length","m",0.01],["dSlag","Slag depth","m",0.05],
+   ["dMetal","Metal depth","m",0.05],["hFb","Freeboard height","m",0.1]]
+   .forEach(f=>mkField(G,f[0],f[1],"num",null,f[2],f[3]));
+
+  const E=document.getElementById("inElec");E.innerHTML="";
+  mkField(E,"V","Secondary voltage","num",null,"V",10);
+  mkField(E,"pf","Power factor","num",null,"",0.01);
+  mkField(E,"etaEl","Electrical-to-bath eff.","num",null,"",0.01);
+  mkField(E,"hlMode","Heat-loss model","select",["geometry","fraction"]);
+  mkField(E,"siMode","Silicon basis","select",["kinetic","equilibrium"]);
+  mkField(E,"siCeil","Si kinetic ceiling","num",null,"wt%",0.05);
+  mkField(E,"FeOfloor","Residual slag FeO","num",null,"wt%",0.05);
+  mkField(E,"hlFrac","Loss fraction","num",null,"",0.01);
+
+  const C=document.getElementById("inEcon");C.innerHTML="";
+  mkField(C,"pPow","Power price","num",null,"USD/MWh",1);
+  mkField(C,"pCarb","Carburiser price","num",null,"USD/t",5);
+  mkField(C,"pLime","Flux price","num",null,"USD/t",5);
+  mkField(C,"pEl","Electrode paste price","num",null,"USD/t",50);
+  mkField(C,"gef","Grid emission factor","num",null,"kg/MWh",10);
+  renderDRI();
+}
+function renderDRI(){
+  const t=document.getElementById("tDRI");
+  t.innerHTML="<tr><th>species</th><th class='num'>wt%</th></tr>"+
+    Object.keys(IN.driComp).map(k=>
+      `<tr><td>${k}</td><td class="num"><input type="number" step="0.01"
+        value="${IN.driComp[k]}" style="width:80px"
+        onchange="IN.driComp['${k}']=parseFloat(this.value);solveStatic()">
+        </td></tr>`).join("");
+}
+function resetInputs(){IN=Object.assign({},DEF);
+  IN.driComp=Object.assign({},DRI[IN.driName]);buildInputs();solveStatic();}
+
+/* ---- solve & render -------------------------------------------------- */
+let RES=null, DYN=null, SWEEP=null;
+function pack(){
+  return Object.assign({},IN,{G:{L:IN.L,W:IN.W,nEl:IN.nEl,dEl:IN.dEl,
+    pitch:IN.pitch,imm:IN.imm,arc:IN.arc,dSlag:IN.dSlag,dMetal:IN.dMetal,
+    hFb:IN.hFb,V:IN.V,pf:IN.pf}});
+}
+function showNotice(kind,msgs){
+  const box=document.getElementById("warnBox");
+  if(!msgs||!msgs.length){box.innerHTML="";return;}
+  const col=kind==="error"?"var(--red)":"#9a6209";
+  const bg=kind==="error"?"#fdecec":"#fdf3e3";
+  box.innerHTML='<div class="card" style="margin-bottom:14px;border-color:'
+    +col+';background:'+bg+'"><h3 style="color:'+col+'">'
+    +(kind==="error"?"Configuration rejected":"Advisory")+'</h3>'
+    +msgs.map(m=>'<p style="margin:4px 0;font-size:13px">'+m+'</p>').join("")
+    +'</div>';
+}
+function solveStatic(){
+  try{
+    RES=solveStaticCore(pack());
+  }catch(e){
+    /* An impossible configuration must not leave the previous answer on
+       screen looking like the answer to the new one.                   */
+    RES=null;
+    showNotice("error",[e.message]);
+    document.getElementById("kpiStrip").innerHTML="";
+    document.getElementById("svgHost").innerHTML="";
+    ["tStreams","tHM","tSlag","tGas","tHeat","tSlagP","tMetP","tZones",
+     "tLining","tElec","tCost","tAnnual","tSweep"].forEach(id=>{
+       const el=document.getElementById(id); if(el)el.innerHTML="";});
+    ["secStrip","refrStrip","elecStrip","econStrip"].forEach(id=>{
+       const el=document.getElementById(id); if(el)el.innerHTML="";});
+    return;
+  }
+  showNotice("warn",RES.warnings);
+  renderSchematic();renderStatic();
+}
+function schematicState(){
+  const R=RES,hl=R.hl;
+  return {Tm:IN.Ttap,Ts:IN.Ttap+IN.dTs,Tg:IN.Tgas,Tp:IN.Tdri,
+    nEl:IN.nEl,imm:IN.imm,arc:IN.arc,ds:IN.dSlag,dm:IN.dMetal,dEl:IN.dEl,
+    L:IN.L,Wd:IN.W,
+    mM:R.mHM/1000,mS:R.mSlag/1000,pile:0,
+    P:R.el.P,Pj:R.el.Pj,Pa:R.el.Pa,I:R.el.I/1000,V:R.el.V,
+    loss:hl?hl.Qtot/1e6:0,SEC:R.SECop,slagRate:R.mSlag/(R.mHM/1000),
+    C:R.metalW.C,Si:R.metalW.Si,Mn:R.metalW.Mn,P_:R.metalW.P,S:R.metalW.S,
+    FeO:R.slagW.FeO,SiO2:R.slagW.SiO2,CaO:R.slagW.CaO,
+    Al2O3:R.slagW.Al2O3,MgO:R.slagW.MgO,B2:B2(R.slagW),
+    frz:hl?hl.freeze*1000:0,shell:hl?hl.Tshell-273.15:0,
+    hotface:hl?hl.zones.slag_wall.Thot-273.15:0,
+    fDRI:0,fC:0,fFlux:0,offgas:R.gas.CO/MW.CO*22.414e-3*IN.prod*1000/
+      (R.mHM/1000)/1000*1000};
+}
+function renderSchematic(){
+  if(!RES)return;
+  document.getElementById("svgHost").innerHTML=furnaceSVG(schematicState());
+  const K=RES.KPI, strip=document.getElementById("kpiStrip");
+  const items=[["SEC operating",nf(K["SEC operating (kWh/tHM)"],0),"kWh/tHM"],
+    ["Power demand",nf(K["Power demand (MW)"],1),"MW"],
+    ["Slag rate",nf(K["Slag rate (kg/tHM)"],0),"kg/tHM"],
+    ["Carbon charged",nf(K["Carbon charged (kg/tHM)"],1),"kg/tHM"],
+    ["Metal yield",nf(K["Metal yield (%)"],2),"%"],
+    ["CO2 total",nf(K["CO2 total (t/tHM)"],3),"t/tHM"],
+    ["OPEX",nf(K["OPEX (USD/tHM)"],1),"USD/tHM"],
+    ["Lining loss",nf(K["Lining loss (kWh/tHM)"],0),"kWh/tHM"]];
+  strip.innerHTML=items.map(i=>`<div class="card kpi">
+    <div class="l">${i[0]}</div><div class="v">${i[1]}</div>
+    <div class="l">${i[2]}</div></div>`).join("");
+}
+function tbl(id,head,rows){
+  document.getElementById(id).innerHTML="<tr>"+head.map(h=>
+    `<th class="${h.n?'num':''}">${h.t||h}</th>`).join("")+"</tr>"+
+    rows.map(r=>"<tr>"+r.map((c,i)=>
+      `<td class="${head[i]&&head[i].n?'num':''}">${c}</td>`).join("")+
+      "</tr>").join("");
+}
+function renderStatic(){
+  if(!RES)return; const R=RES;
+  tbl("tStreams",["stream",{t:"kg",n:1}],[
+    ["DRI",nf(R.mDRI,1)],["Scrap",nf(R.mScrap,1)],
+    ["Carburiser",nf(R.mC,1)],["Primary flux",nf(R.mLime,1)],
+    ["Secondary flux",nf(R.mDolo,1)],
+    ["<b>Total charge</b>","<b>"+nf(R.mDRI+R.mScrap+R.mC+R.mLime+R.mDolo,1)+
+      "</b>"],
+    ["Hot metal",nf(R.mHM,1)],["Slag",nf(R.mSlag,1)],
+    ["Off-gas",nf(sum(R.gas),1)],["Dust (unreacted C)",nf(R.dust.C,2)]]);
+  tbl("tHM",["element",{t:"wt%",n:1},{t:"kg",n:1}],
+    Object.keys(R.metalW).map(k=>[k,nf(R.metalW[k],3),nf(R.metal[k],2)]));
+  tbl("tSlag",["oxide",{t:"wt%",n:1},{t:"kg",n:1}],
+    Object.keys(R.slagW).map(k=>[k,nf(R.slagW[k],3),nf(R.slag[k],2)]));
+  tbl("tGas",["species",{t:"kg",n:1}],
+    Object.keys(R.gas).map(k=>[k,nf(R.gas[k],2)])
+    .concat([["Dust C",nf(R.dust.C,2)],
+             ["Residual (convergence)",nf(R.res,6)]]));
+  let ctx=clear(document.getElementById("cMass"));
+  barChart(ctx,20,26,520,250,"Charge (kg per 1000 kg Fe)",
+    ["DRI","Scrap","Carbon","Flux 1","Flux 2"],
+    [R.mDRI,R.mScrap,R.mC,R.mLime,R.mDolo]);
+  const sk=Object.keys(R.slagW).filter(k=>R.slagW[k]>0.05);
+  barChart(ctx,570,26,510,250,"Tapped slag composition (wt%)",sk,
+    sk.map(k=>R.slagW[k]));
+
+  /* rendered straight from the engine's own terms, so the table can
+     never drift away from the numbers the solver actually used        */
+  const hb=R.termsMJ;
+  tbl("tHeat",["term",{t:"MJ/tHM",n:1}],
+    Object.keys(hb).map(k=>[k,nf(hb[k],1)])
+      .concat([["<b>Net process heat</b>","<b>"+nf(R.QpT/1000,1)+"</b>"],
+               ["<b>Total to the bath</b>",
+                "<b>"+nf((R.QpT+R.Qloss)/1000,1)+"</b>"]]));
+  ctx=clear(document.getElementById("cEnergy"));
+  hbarChart(ctx,10,26,600,300,"Energy split (MJ/tHM)",
+    Object.keys(hb),Object.values(hb).map(Math.abs));
+  document.getElementById("secStrip").innerHTML=
+    [["SEC reversible",R.SECrev],["SEC equilibrium basis",R.SECeq],
+     ["SEC operating",R.SECop]].map(i=>
+      `<div class="card kpi"><div class="l">${i[0]}</div>
+       <div class="v">${nf(i[1],0)}</div><div class="l">kWh/tHM</div></div>`)
+      .join("");
+
+  {const v=R.valor;
+   const col=v.score>=75?"var(--teal)":(v.score>=50?"#9a6209":"var(--red)");
+   document.getElementById("valorBox").innerHTML=
+     '<div class="grid g4"><div class="card kpi"><div class="l">Suitability score</div>'
+     +'<div class="v" style="color:'+col+'">'+v.score.toFixed(0)+'</div>'
+     +'<div class="l">'+v.verdict+'</div></div>'
+     +'<div class="card kpi"><div class="l">Basicity B2</div><div class="v">'
+     +v.B2.toFixed(2)+'</div><div class="l">target 0.85-1.30</div></div>'
+     +'<div class="card kpi"><div class="l">Slag FeO</div><div class="v">'
+     +v.FeO.toFixed(2)+'</div><div class="l">wt%, target &lt; 2</div></div>'
+     +'<div class="card kpi"><div class="l">Free MgO risk</div><div class="v">'
+     +(v.freeMgO?"yes":"no")+'</div><div class="l">MgO '+v.MgO.toFixed(1)
+     +' vs sat '+v.sat.toFixed(1)+' wt%</div></div></div>'
+     +(v.notes.length?'<ul style="margin-top:10px">'
+       +v.notes.map(n=>'<li style="font-size:12.5px;color:#33414f">'+n+'</li>').join("")
+       +'</ul>':'');}
+  const sp={"B2 (CaO/SiO2)":B2(R.slagW),"B3 ((CaO+MgO)/SiO2)":B3(R.slagW),
+    "B4":B4(R.slagW),"Optical basicity":opticalBasicity(R.slagW),
+    "Al2O3/SiO2":(R.slagW.Al2O3||0)/Math.max(R.slagW.SiO2,1e-9),
+    "Viscosity (Pa.s)":slagVisc(R.slagW,R.Ts),
+    "Density (kg/m3)":slagDens(R.slagW,R.Ts),
+    "Electrical conductivity (S/m)":slagSigma(R.slagW,R.Ts),
+    "Thermal conductivity (W/m/K)":slagK(R.slagW,R.Ts),
+    "Liquidus (degC)":slagLiquidus(R.slagW)-273.15,
+    "Superheat (K)":R.Ts-slagLiquidus(R.slagW),
+    "Sulphide partition L_S":LS(R.slagW,R.Ts)};
+  tbl("tSlagP",["property",{t:"value",n:1}],
+    Object.keys(sp).map(k=>[k,nf(sp[k],3)]));
+  const mp={"Density (kg/m3)":metalDens(R.metalW,R.T),
+    "Liquidus (degC)":metalLiquidus(R.metalW)-273.15,
+    "Superheat (K)":R.T-metalLiquidus(R.metalW),
+    "C saturation (wt%)":cSat(IN.Ttap,R.metalW),
+    "C / C_sat":(R.metalW.C||0)/Math.max(cSat(IN.Ttap,R.metalW),1e-6),
+    "[Si] equilibrium, unrestricted (wt%)":R.SiEq,
+    "[Si] as reported (wt%)":R.metalW.Si,
+    "[Mn] equilibrium (wt%)":mnEq(R.slagW,R.metalW,R.T)};
+  tbl("tMetP",["property",{t:"value",n:1}],
+    Object.keys(mp).map(k=>[k,nf(mp[k],3)]));
+
+  const Ts_=[];for(let t=1350;t<=1650;t+=6)Ts_.push(t);
+  ctx=clear(document.getElementById("cProps"));
+  lineChart(ctx,20,26,250,250,"Viscosity (Pa.s)",Ts_,
+    [{n:"eta",v:Ts_.map(t=>slagVisc(R.slagW,t+273.15))}]);
+  lineChart(ctx,290,26,250,250,"Conductivity (S/m)",Ts_,
+    [{n:"sigma",v:Ts_.map(t=>slagSigma(R.slagW,t+273.15))}]);
+  lineChart(ctx,560,26,250,250,"Density (kg/m3)",Ts_,
+    [{n:"rho",v:Ts_.map(t=>slagDens(R.slagW,t+273.15))}]);
+  lineChart(ctx,830,26,250,250,"Slag enthalpy (kJ/kg)",Ts_,
+    [{n:"h",v:Ts_.map(t=>hSlag(R.slagW,t+273.15))}]);
+  const Te=[];for(let t=1400;t<=1560;t+=4)Te.push(t);
+  ctx=clear(document.getElementById("cEq"));
+  lineChart(ctx,20,26,340,250,"[Si] equilibrium (wt%)",Te,
+    [{n:"Si*",v:Te.map(t=>siEq(R.slagW,R.metalW,t+273.15))},
+     {n:"current",v:Te.map(()=>R.metalW.Si)}]);
+  lineChart(ctx,380,26,340,250,"[Mn] equilibrium (wt%)",Te,
+    [{n:"Mn*",v:Te.map(t=>mnEq(R.slagW,R.metalW,t+273.15))},
+     {n:"current",v:Te.map(()=>R.metalW.Mn)}]);
+  lineChart(ctx,740,26,340,250,"Carbon saturation (wt%)",Te,
+    [{n:"C_sat",v:Te.map(t=>cSat(t,R.metalW))},
+     {n:"current",v:Te.map(()=>R.metalW.C)}]);
+
+  const hl=R.hl;
+  document.getElementById("refrStrip").innerHTML=
+    [["Total lining loss",nf(hl.Qtot/1e6,1),"MW"],
+     ["To cooling water",nf(100*hl.waterFrac,0),"%"],
+     ["Freeze lining",nf(hl.freeze*1000,0),"mm"],
+     ["Max shell temperature",nf(hl.Tshell-273.15,0),"degC"]].map(i=>
+      `<div class="card kpi"><div class="l">${i[0]}</div>
+       <div class="v">${i[1]}</div><div class="l">${i[2]}</div></div>`).join("");
+  tbl("tZones",["zone",{t:"area m2",n:1},{t:"q kW/m2",n:1},{t:"Q MW",n:1},
+    {t:"hot face degC",n:1},{t:"shell degC",n:1},{t:"freeze mm",n:1}],
+    Object.keys(hl.zones).map(z=>{const v=hl.zones[z];
+      return [z,nf(v.area,1),nf(v.q/1e3,1),nf(v.Q/1e6,2),
+        nf(v.Thot-273.15,0),nf(v.Tshell-273.15,1),nf(v.freeze*1000,0)];}));
+  const lrows=[];
+  for(const z in LINING)LINING[z].forEach(l=>lrows.push(
+    [z,l[0],nf(l[1]*1000,0),nf(REFR[l[0]],3)]));
+  tbl("tLining",["zone","material",{t:"mm",n:1},{t:"k W/m/K",n:1}],lrows);
+  ctx=clear(document.getElementById("cRefr"));
+  {const zs=Object.keys(hl.zones);
+   const series=zs.map((z,i)=>{const v=hl.zones[z];let x=0;
+     const pts=[0];v.layers.forEach(l=>{x+=l[1];pts.push(x*1000);});
+     return {n:z,v:v.nodes.map(t=>t-273.15),x:pts};});
+   panel(ctx,20,26,520,270,"Through-lining temperature profiles (degC vs mm)");
+   let hi=0,xm=0;series.forEach(s=>{s.v.forEach(v=>hi=Math.max(hi,v));
+     xm=Math.max(xm,s.x[s.x.length-1]);});
+   series.forEach((s,i)=>{ctx.strokeStyle=COL[i%COL.length];ctx.lineWidth=1.6;
+     ctx.beginPath();s.x.forEach((xx,k)=>{
+       const X=28+(500)*(xx/Math.max(xm,1)),Y=26+260-250*(s.v[k]/Math.max(hi,1));
+       k?ctx.lineTo(X,Y):ctx.moveTo(X,Y);});ctx.stroke();
+     ctx.fillStyle=COL[i%COL.length];ctx.font="9px Inter,sans-serif";
+     ctx.fillText(s.n,440,44+i*11);});
+  }
+  const Tsl=[];for(let t=IN.Ttap+IN.dTs-70;t<=IN.Ttap+IN.dTs+70;t+=4)Tsl.push(t);
+  lineChart(ctx,570,26,510,270,"Freeze-lining thickness (mm) vs slag T (degC)",
+    Tsl,[{n:"freeze",v:Tsl.map(t=>heatLoss(pack().G,t+273.15,t+273.15-60,
+      t+273.15,R.slagW).freeze*1000)}]);
+
+  const el=R.el;
+  document.getElementById("elecStrip").innerHTML=
+    [["Active power",nf(el.P,1),"MW"],["Current",nf(el.I/1000,1),"kA"],
+     ["Tap voltage",nf(el.V,0),"V"],
+     ["Operating resistance",nf(el.Rop,2),"mOhm"]].map(i=>
+      `<div class="card kpi"><div class="l">${i[0]}</div>
+       <div class="v">${i[1]}</div><div class="l">${i[2]}</div></div>`).join("");
+  const ed={"Slag conductivity (S/m)":el.sigma,"Slag resistance (Ohm)":el.Rslag,
+    "Electrode resistance (Ohm)":el.Rel,"Arc voltage (V)":el.Uarc,
+    "Joule power in slag (MW)":el.Pj,"Brush-arc power (MW)":el.Pa,
+    "Electrode ohmic loss (MW)":el.Pe,"Power to bath (MW)":el.Pbath,
+    "Power to freeboard (MW)":el.Pfb,"Electrical efficiency":el.eff,
+    "Apparent power (MVA)":el.MVA,
+    "Arc radiative fraction":el.fRad,
+    "Electrode consumption (kg/MWh)":el.kgMWh};
+  tbl("tElec",["quantity",{t:"value",n:1}],
+    Object.keys(ed).map(k=>[k,nf(ed[k],4)]));
+  ctx=clear(document.getElementById("cElec"));
+  const imms=[];for(let m=0.10;m<=Math.min(0.9,0.75*IN.dSlag);m+=0.02)
+    imms.push(m);
+  lineChart(ctx,20,26,580,270,"Power (MW) vs immersion (m)",imms,
+    [-60,0,60].map((d,i)=>({n:"T "+(IN.Ttap+IN.dTs+d)+" degC",
+      v:imms.map(m=>electrical(pack().G,R.slagW,IN.Ttap+IN.dTs+d+273.15,m,
+        IN.arc,0).P)})));
+
+  const cost={"Electric power":R.SECop/1000*IN.pPow,
+    "Carburiser":R.mC/(R.mHM/1000)/1000*IN.pCarb,
+    "Fluxes":(R.mLime+R.mDolo)/(R.mHM/1000)/1000*IN.pLime,
+    "Electrode paste":R.elCons/1000*IN.pEl};
+  document.getElementById("econStrip").innerHTML=
+    [["Specific OPEX",nf(R.opex,1),"USD/tHM"],
+     ["Power",nf(R.SECop,0),"kWh/tHM"],
+     ["CO2 direct",nf(R.co2d,3),"t/tHM"],
+     ["CO2 total",nf(R.co2d+R.co2i,3),"t/tHM"]].map(i=>
+      `<div class="card kpi"><div class="l">${i[0]}</div>
+       <div class="v">${i[1]}</div><div class="l">${i[2]}</div></div>`).join("");
+  tbl("tCost",["item",{t:"USD/tHM",n:1}],
+    Object.keys(cost).map(k=>[k,nf(cost[k],2)])
+      .concat([["<b>TOTAL</b>","<b>"+nf(sum(cost),2)+"</b>"]]));
+  ctx=clear(document.getElementById("cEcon"));
+  barChart(ctx,10,26,290,290,"Cost split (USD/tHM)",Object.keys(cost),
+    Object.values(cost));
+  const pws=[];for(let p=Math.max(5,IN.pPow*0.4);p<=IN.pPow*1.8;p+=2)
+    pws.push(p);
+  lineChart(ctx,320,26,290,290,"Conversion cost vs power price",pws,
+    [0.9,1.0,1.1].map((f,i)=>({n:"SEC x"+f,
+      v:pws.map(p=>R.SECop*f/1000*p+sum(cost)-cost["Electric power"])})));
+  const hrs=8000;
+  const ann={"Hot metal (Mt/a)":IN.prod*hrs/1e6,
+    "Energy (GWh/a)":R.SECop*IN.prod*hrs/1e6,
+    "Slag (Mt/a)":R.mSlag/(R.mHM/1000)*IN.prod*hrs/1e9,
+    "Carburiser (kt/a)":R.mC/(R.mHM/1000)*IN.prod*hrs/1e6,
+    "Flux (kt/a)":(R.mLime+R.mDolo)/(R.mHM/1000)*IN.prod*hrs/1e6,
+    "CO2 (Mt/a)":(R.co2d+R.co2i)*IN.prod*hrs/1e6,
+    "Conversion cost (MUSD/a)":sum(cost)*IN.prod*hrs/1e6};
+  tbl("tAnnual",["quantity",{t:"value",n:1}],
+    Object.keys(ann).map(k=>[k,nf(ann[k],3)]));
+}
+
+/* ---- parametric ------------------------------------------------------ */
+const SWEEPVARS=[["MR","Metallisation (%)"],["Ttap","Tapping temperature (degC)"],
+  ["Ctgt","Target [C] (wt%)"],["B2","Target basicity B2"],
+  ["scrap","Scrap fraction (wt%)"],["Tdri","DRI temperature (degC)"],
+  ["MgO","Target slag MgO (wt%)"],["dTs","Slag superheat (K)"],
+  ["imm","Electrode immersion (m)"]];
+const sv=document.getElementById("swVar");
+SWEEPVARS.forEach(v=>{const o=document.createElement("option");
+  o.value=v[0];o.textContent=v[1];sv.appendChild(o);});
+function runSweep(){
+  if(!RES){alert("Fix the configuration first.");return;}
+  const key=sv.value,lo=parseFloat(swLo.value),hi=parseFloat(swHi.value),
+    n=Math.max(3,parseInt(swN.value));
+  const rows=[];
+  for(let i=0;i<n;i++){
+    const x=lo+(hi-lo)*i/(n-1);
+    const I2=Object.assign({},pack()); I2[key]=x;
+    I2.G=Object.assign({},I2.G); if(key in I2.G)I2.G[key]=x;
+    const r=solveStaticCore(I2);
+    rows.push({x:x,SECrev:r.SECrev,SECeq:r.SECeq,SECop:r.SECop,
+      slag:r.mSlag/(r.mHM/1000),carbon:r.mC/(r.mHM/1000),
+      Si:r.metalW.Si,Mn:r.metalW.Mn,FeO:r.slagW.FeO,
+      visc:slagVisc(r.slagW,r.Ts),P:r.P_MW,opex:r.opex,co2:r.co2d+r.co2i});}
+  SWEEP={key:key,rows:rows};
+  const xs=rows.map(r=>r.x),ctx=clear(document.getElementById("cSweep"));
+  const panels=[["SEC (kWh/tHM)",[["SECrev","reversible"],
+      ["SECeq","equilibrium"],["SECop","operating"]]],
+    ["Slag rate (kg/tHM)",[["slag","slag"]]],
+    ["Carbon (kg/tHM)",[["carbon","C"]]],
+    ["Hot-metal solutes (wt%)",[["Si","Si"],["Mn","Mn"]]],
+    ["Slag FeO (wt%)",[["FeO","FeO"]]],
+    ["Slag viscosity (Pa.s)",[["visc","eta"]]],
+    ["Power (MW)",[["P","P"]]],["OPEX (USD/tHM)",[["opex","OPEX"]]],
+    ["CO2 (t/tHM)",[["co2","CO2"]]]];
+  panels.forEach((p,i)=>{
+    const cx=20+(i%3)*375, cy=30+Math.floor(i/3)*200;
+    lineChart(ctx,cx,cy,350,175,p[0],xs,
+      p[1].map(s=>({n:s[1],v:rows.map(r=>r[s[0]])})));});
+  tbl("tSweep",[SWEEPVARS.find(v=>v[0]===key)[1],{t:"SEC op",n:1},
+    {t:"slag",n:1},{t:"carbon",n:1},{t:"Si",n:1},{t:"Mn",n:1},
+    {t:"FeO",n:1},{t:"OPEX",n:1}],
+    rows.map(r=>[nf(r.x,3),nf(r.SECop,1),nf(r.slag,1),nf(r.carbon,2),
+      nf(r.Si,3),nf(r.Mn,3),nf(r.FeO,3),nf(r.opex,2)]));
+}
+function sweepCSV(){
+  if(!SWEEP)return "";
+  const k=Object.keys(SWEEP.rows[0]);
+  return k.join(",")+"\n"+SWEEP.rows.map(r=>k.map(c=>r[c]).join(",")).join("\n");
+}
+
+/* ---- dynamic --------------------------------------------------------- */
+const DDEF={dur:420,dt:10,ctrl:"temperature",P:112,Tset:1500,
+  dri:160,cRate:55,limeRate:73,doloRate:36,pcr:0.15,dp:20,cEff:0.55,
+  mtInt:60,mtMass:150,mtDur:12,mtFirst:55,
+  stInt:30,stMass:24,stDur:8,stFirst:25,
+  m0:420,s0:260,Tm0:1480,Ts0:1545,
+  kFeO:3.0,kChar:0.90,kSi:20.0,kMn:5.5,kC:0.02};
+let DP=Object.assign({},DDEF);
+function mkD(host,key,label,type,opts,unit,step){
+  const l=document.createElement("label");
+  l.innerHTML=`<span>${label}${unit?' <i class="pill">'+unit+'</i>':''}</span>`;
+  let w;
+  if(type==="select"){w=document.createElement("select");
+    opts.forEach(o=>{const e=document.createElement("option");
+      e.textContent=o;w.appendChild(e);});w.value=DP[key];}
+  else{w=document.createElement("input");w.type="number";w.value=DP[key];
+    if(step)w.step=step;}
+  w.onchange=()=>DP[key]=(type==="select")?w.value:parseFloat(w.value);
+  l.appendChild(w);host.appendChild(l);
+}
+function buildDyn(){
+  const R=document.getElementById("dynRun");R.innerHTML="";
+  mkD(R,"dur","Duration","num",null,"min",30);
+  mkD(R,"dt","Time step","num",null,"s",1);
+  mkD(R,"ctrl","Power control","select",["temperature","fixed"]);
+  mkD(R,"P","Rated active power","num",null,"MW",1);
+  mkD(R,"Tset","Hot-metal setpoint","num",null,"degC",5);
+  const F=document.getElementById("dynFeed");F.innerHTML="";
+  mkD(F,"dri","DRI feed","num",null,"t/h",5);
+  mkD(F,"cRate","Carburiser","num",null,"kg/t DRI",1);
+  mkD(F,"limeRate","Primary flux","num",null,"kg/t DRI",1);
+  mkD(F,"doloRate","Secondary flux","num",null,"kg/t DRI",1);
+  mkD(F,"pcr","Post-combustion ratio","num",null,"",0.01);
+  mkD(F,"dp","Carburiser particle size","num",null,"mm",1);
+  mkD(F,"cEff","Carbon contact efficiency","num",null,"",0.05);
+  const T=document.getElementById("dynTap");T.innerHTML="";
+  mkD(T,"mtMass","Metal tap mass","num",null,"t",5);
+  mkD(T,"mtInt","Metal tap interval","num",null,"min",5);
+  mkD(T,"mtDur","Metal tap duration","num",null,"min",1);
+  mkD(T,"stMass","Slag tap mass","num",null,"t",1);
+  mkD(T,"stInt","Slag tap interval","num",null,"min",5);
+  mkD(T,"stDur","Slag tap duration","num",null,"min",1);
+  const B=document.getElementById("dynInit");B.innerHTML="";
+  mkD(B,"m0","Initial metal","num",null,"t",10);
+  mkD(B,"s0","Initial slag","num",null,"t",10);
+  mkD(B,"Tm0","Initial metal T","num",null,"degC",5);
+  mkD(B,"Ts0","Initial slag T","num",null,"degC",5);
+  const K=document.getElementById("dynKin");K.innerHTML="";
+  mkD(K,"kFeO","k0 FeO by [C]","num",null,"m/s",0.1);
+  mkD(K,"kChar","k0 FeO on char","num",null,"m/s",0.05);
+  mkD(K,"kSi","k0 SiO2","num",null,"m/s",0.5);
+  mkD(K,"kMn","k0 MnO","num",null,"m/s",0.5);
+  mkD(K,"kC","k0 C dissolution","num",null,"m/s",0.005);
+}
+function runDynamic(){
+  if(!RES){alert("Fix the configuration first.");return;}
+  const t0=performance.now();
+  DYN=solveDynamic(pack(),DP);
+  const dtms=(performance.now()-t0).toFixed(0);
+  tbl("tDynSum",["KPI",{t:"value",n:1}],
+    Object.keys(DYN.summary).map(k=>[k,nf(DYN.summary[k],2)]));
+  const r=document.getElementById("replay");
+  r.max=DYN.T.t.length-1; r.value=r.max;
+  renderTraj(); renderEvents(); replayTo(r.max);
+  alert("Dynamic simulation complete in "+dtms+" ms.\nSEC "+
+    nf(DYN.summary["SEC (kWh/tHM)"],0)+" kWh/tHM, slag "+
+    nf(DYN.summary["Slag rate (kg/tHM)"],0)+" kg/tHM.");
+  go("traj");
+}
+function replayTo(i){
+  if(!DYN)return; i=parseInt(i); const T=DYN.T;
+  document.getElementById("replayLbl").textContent=
+    "time "+nf(T.t[i],0)+" min";
+  const al=DYN.events.filter(e=>(e.type==="ALARM"||e.type==="WARNING")&&
+    e.t<=T.t[i]);
+  const st={Tm:T.Tm[i],Ts:T.Ts[i],Tg:T.Tg[i],Tp:T.Tp[i],nEl:IN.nEl,
+    imm:IN.imm,arc:IN.arc,ds:IN.dSlag,dm:IN.dMetal,dEl:IN.dEl,L:IN.L,Wd:IN.W,
+    mM:T.mM[i],mS:T.mS[i],pile:T.mP[i],P:T.P[i],Pj:T.Pj[i],Pa:T.Pa[i],
+    I:T.I[i],V:T.V[i],loss:T.loss[i],SEC:T.SEC[i],slagRate:T.slagRate[i],
+    C:T.C[i],Si:T.Si[i],Mn:T.Mn[i],P_:T.P_[i],S:T.S[i],FeO:T.FeO[i],
+    SiO2:T.SiO2[i],CaO:T.CaO[i],Al2O3:T.Al2O3[i],MgO:T.MgO[i],B2:T.B2[i],
+    frz:T.frz[i],shell:T.shell[i],hotface:T.liq[i],offgas:T.CO[i],
+    fDRI:DP.dri,fC:DP.dri*DP.cRate/1000,
+    fFlux:DP.dri*(DP.limeRate+DP.doloRate)/1000,
+    alarm:al.length?al[al.length-1].message:""};
+  document.getElementById("svgHost2").innerHTML=furnaceSVG(st);
+}
+function renderTraj(){
+  if(!DYN)return; const T=DYN.T, xs=T.t;
+  const ctx=clear(document.getElementById("cDyn"));
+  const panels=[
+    ["Temperatures (degC)",[["Tm","hot metal"],["Ts","slag"],
+      ["Tg","freeboard"],["Tp","feed pile"]]],
+    ["Power (MW)",[["P","active"],["Pj","slag Joule"],["Pa","brush arc"],
+      ["loss","lining loss"]]],
+    ["Bath inventory (t)",[["mM","metal"],["mS","slag"],["mP","pile"],
+      ["char","char"]]],
+    ["Hot-metal chemistry (wt%)",[["C","C"],["Si","Si"],["Mn","Mn"]]],
+    ["Residuals (wt%)",[["P_","P"],["S","S"]]],
+    ["Slag oxides (wt%)",[["SiO2","SiO2"],["CaO","CaO"],["Al2O3","Al2O3"],
+      ["MgO","MgO"],["FeO","FeO"]]],
+    ["Basicity",[["B2","B2"],["B3","B3"]]],
+    ["Reaction rates (kg/s)",[["rFeO","FeO red."],["rSi","Si"],
+      ["rMn","Mn"],["rC","C diss."]]],
+    ["Electrical",[["I","kA"],["R","mOhm"],["sig","S/m"]]],
+    ["Slag state",[["visc","viscosity"],["sh","superheat K"]]],
+    ["Lining",[["frz","freeze mm"],["shell","shell degC"]]],
+    ["Production",[["tapM","metal t"],["tapS","slag t"],["SEC","SEC"]]],
+    ["Melt rate (t/h)",[["melt","melt rate"]]],
+    ["Loss breakdown (MW)",[["wall","wall"],["roof","roof"],
+      ["hearth","hearth"]]],
+    ["Emissions",[["CO","CO Nm3/h"],["CO2i","CO2 t/tHM"]]]];
+  panels.forEach((p,i)=>{
+    const cx=20+(i%3)*380, cy=30+Math.floor(i/3)*190;
+    lineChart(ctx,cx,cy,355,165,p[0],xs,
+      p[1].map(s=>({n:s[1],v:T[s[0]]})));});
+}
+function renderEvents(){
+  if(!DYN)return;
+  const f=document.getElementById("evFilter").value;
+  const rows=DYN.events.filter(e=>f==="ALL"||e.type===f).map(e=>[
+    e.clock,nf(e.t,1),
+    `<span class="badge ${e.type==="ALARM"?"b-alarm":
+      (e.type==="WARNING"?"b-warn":(e.type.startsWith("TAP")?"b-tap":"b-ok"))}"
+      >${e.type}</span>`,e.message,e.detail]);
+  tbl("tEvents",["clock",{t:"t (min)",n:1},"type","message","detail"],rows);
+  const c=DYN.cum;
+  tbl("tAdds",["stream",{t:"rate",n:1},"unit",{t:"cumulative (t)",n:1}],[
+    ["DRI",nf(DP.dri,1),"t/h",nf(c.dri,1)],
+    ["Carburiser",nf(DP.dri*DP.cRate/1000,2),"t/h",nf(c.C,2)],
+    ["Fluxes",nf(DP.dri*(DP.limeRate+DP.doloRate)/1000,2),"t/h",nf(c.flux,2)],
+    ["Metal tapped","-","t",nf(c.mt,1)],
+    ["Slag tapped","-","t",nf(c.st,1)],
+    ["Electrode consumed","-","kg",nf(c.el,1)]]);
+}
+function trajCSV(){
+  if(!DYN)return "";
+  const k=Object.keys(DYN.T);
+  let s=k.join(",")+"\n";
+  for(let i=0;i<DYN.T.t.length;i++)
+    s+=k.map(c=>DYN.T[c][i]).join(",")+"\n";
+  return s;
+}
+function eventCSV(){
+  if(!DYN)return "";
+  return "t_min,clock,type,message,detail\n"+DYN.events.map(e=>
+    [e.t,e.clock,e.type,'"'+e.message+'"','"'+e.detail+'"'].join(",")).join("\n");
+}
+function downloadCSV(txt,name){
+  if(!txt){alert("Nothing to export yet.");return;}
+  const b=new Blob([txt],{type:"text/csv"}),u=URL.createObjectURL(b);
+  const a=document.createElement("a");a.href=u;a.download=name;a.click();
+  URL.revokeObjectURL(u);}
+function downloadSVG(){
+  const b=new Blob([furnaceSVG(schematicState())],{type:"image/svg+xml"});
+  const u=URL.createObjectURL(b),a=document.createElement("a");
+  a.href=u;a.download="esf_schematic.svg";a.click();URL.revokeObjectURL(u);}
+function exportJSON(){
+  const b=new Blob([JSON.stringify({inputs:IN,dynamic:DP,
+    KPI:RES?RES.KPI:null},null,2)],{type:"application/json"});
+  const u=URL.createObjectURL(b),a=document.createElement("a");
+  a.href=u;a.download="esf_case.json";a.click();URL.revokeObjectURL(u);}
+
+document.getElementById("helpBody").innerHTML=`
+<h4>What this console is</h4>
+<p>A self-contained operator workbench for the Electric Smelting Furnace
+(open slag bath furnace) that melts and reduces DRI produced from low-grade
+iron ores into blast-furnace-grade hot metal. It runs entirely in your
+browser: no server, no upload, no installation. The plant used as the
+reference case is anonymised throughout as <b>Industry-X</b>.</p>
+
+<h4>Static versus dynamic</h4>
+<p>The <b>static</b> model answers "what does a tonne of hot metal cost in
+energy, carbon, flux and slag?" It closes the elemental mass balance and the
+heat balance simultaneously, with slag/metal equilibria for Si, Mn, P, S and
+Ti, a multilayer lining network and a slag-resistance electrical model.</p>
+<p>The <b>dynamic</b> model answers "what does the furnace actually do over a
+shift?" It marches the five control volumes (feed pile, slag, metal,
+freeboard, lining) forward in time with reaction kinetics, interfacial heat
+and mass transfer, electrode regulation, tapping cycles and an alarm
+system.</p>
+
+<h4>Reading the SEC hierarchy</h4>
+<p><b>SEC reversible</b> is the thermodynamic minimum. <b>SEC equilibrium
+basis</b> divides that by the bath thermal-utilisation factor (0.86) so it can
+be compared like-for-like with published FactSage and HSC figures.
+<b>SEC operating</b> adds the lining losses and the electrical-to-bath
+efficiency and is what the transformer must actually deliver.</p>
+
+<h4>Typical operating window</h4>
+<p>Tapping temperature 1480-1520 degC; slag superheat 60-120 K; basicity B2
+1.0-1.2; MgO 7-9 wt% for magnesia-chrome lining protection; slag FeO below
+3 wt%; hot metal 3.2-4.0 wt% C and 0.2-0.5 wt% Si. Silicon is extremely
+temperature-sensitive: it roughly doubles for every 25 degC of extra
+superheat, which is the single most powerful lever the operator has over
+downstream BOF lime and oxygen demand.</p>
+
+<h4>Calibration</h4>
+<p>The kinetic pre-exponentials on the <b>Dynamic</b> page are the plant
+calibration handles. Fit them once against a set of tapped analyses and the
+model tracks the furnace; everything else is first-principles.</p>
+
+<h4>Fidelity note &mdash; measured, not claimed</h4>
+<p>This console runs a reduced-order form of the ESF-DT engine. Measured
+against the Python reference on the standard case (DRI-A, 100 %
+metallisation, 1500 degC, B2 1.10) it reproduces:</p>
+<ul>
+<li>charge and product masses within <b>0.1 %</b> for DRI, carburiser and hot
+metal, and <b>0.3 %</b> for slag; flux masses within <b>5 %</b>;</li>
+<li>slag composition within <b>1 wt%</b> absolute and hot-metal [Si] and [Mn]
+within <b>0.5 %</b>;</li>
+<li>the lining heat-loss network within <b>0.5 %</b> in total, with the
+freeze-lining thickness <b>10 %</b> thinner;</li>
+<li>the seven-hour dynamic campaign within <b>6 %</b> on specific energy,
+power and loss share, and within <b>2.5 %</b> on productivity, tapped [C] and
+slag basicity;</li>
+<li>static specific energy about <b>6 % high</b> at 100 % metallisation,
+rising to <b>9 %</b> at 80 %.</li>
+</ul>
+<p>Every trend &mdash; metallisation, temperature, gangue, carbon, scrap
+blending, flux chemistry &mdash; carries the correct slope and sign, and the
+console applies the same conservation rules and the same refusals as the
+reference: it rejects an acid-only flux pair, warns when an MgO target cannot
+be met, charges carbonate fluxes as received, and limits silicon to the
+silica actually present.</p>
+<p>Use this console for screening, training and demonstration. Use the Python
+package (Shomate enthalpies, Wagner interaction parameters, Urbain viscosity,
+full iterative lining solver, and the <code>audit.py</code> correctness
+sweep) for engineering studies, licence-basis calculations and plant
+deployment.</p>
+
+<p style="margin-top:18px;color:#5c6b7a">&copy; Extractmet Private Limited,
+IIT Madras Research Park. ESF-DT v1.0.0.</p>`;
+
+buildInputs(); buildDyn(); solveStatic();
+</script>
+</body>
+</html>

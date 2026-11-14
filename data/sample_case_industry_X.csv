@@ -1,0 +1,106 @@
+section,item,value,unit
+KPI,SEC_reversible_kWh_tHM,446.73245,
+KPI,SEC_thermodynamic_kWh_tHM,519.45634,
+KPI,SEC_operating_kWh_tHM,720.24483,
+KPI,Heat_loss_kWh_tHM,201.4879,
+KPI,Slag_rate_kg_tHM,294.19077,
+KPI,Carbon_consumed_kg_tHM,52.87007,
+KPI,Carbon_charged_kg_tHM,66.05456,
+KPI,Flux_rate_kg_tHM,136.87648,
+KPI,Fe_yield_pct,99.99998,
+KPI,Metal_yield_pct,88.7674,
+KPI,Electrode_consumption_kg_tHM,3.60122,
+KPI,Offgas_rate_kg_tHM,58.25186,
+KPI,CO2_direct_t_tHM,0.06668,
+KPI,CO2_indirect_t_tHM,0.08643,
+KPI,CO2_total_t_tHM,0.15311,
+KPI,Power_demand_MW,102.99501,
+KPI,Productivity_tHM_h,143.0,
+KPI,Specific_OPEX_USD_tHM,67.00552,
+KPI,Power_intensity_MW_m2,0.26752,
+inputs_kg,DRI,1183.43195,kg
+inputs_kg,Scrap,0.0,kg
+inputs_kg,Carbon source,69.39043,kg
+inputs_kg,Burnt lime,91.60508,kg
+inputs_kg,Dolomitic lime,52.18392,kg
+inputs_kg,Total charge,1396.61138,kg
+outputs_kg,Hot metal,1050.50183,kg
+outputs_kg,Slag,309.04794,kg
+outputs_kg,Off-gas,61.19369,kg
+hot_metal_wt_pct,Fe,95.19258,wt%
+hot_metal_wt_pct,C,3.5,wt%
+hot_metal_wt_pct,Si,0.33672,wt%
+hot_metal_wt_pct,Mn,0.82448,wt%
+hot_metal_wt_pct,P,0.04425,wt%
+hot_metal_wt_pct,S,0.00745,wt%
+hot_metal_wt_pct,Ti,0.09453,wt%
+hot_metal_wt_pct,Cr,0.0,wt%
+hot_metal_wt_pct,Ni,0.0,wt%
+hot_metal_wt_pct,Cu,0.0,wt%
+slag_wt_pct,SiO2,36.98529,wt%
+slag_wt_pct,Al2O3,14.07854,wt%
+slag_wt_pct,CaO,39.49304,wt%
+slag_wt_pct,MgO,8.39277,wt%
+slag_wt_pct,TiO2,0.22976,wt%
+slag_wt_pct,MnO,0.40207,wt%
+slag_wt_pct,FeO,7e-05,wt%
+slag_wt_pct,P2O5,0.0,wt%
+slag_wt_pct,CaS,0.41846,wt%
+slag_wt_pct,V2O5,0.0,wt%
+slag_wt_pct,Cr2O3,0.0,wt%
+slag_wt_pct,Na2O,0.0,wt%
+slag_wt_pct,K2O,0.0,wt%
+offgas_kg,CO,38.52474,kg
+offgas_kg,CO2,9.51854,kg
+offgas_kg,H2O,2.77351,kg
+offgas_kg,N2,10.37689,kg
+slag_properties,B2 (CaO/SiO2),1.0678,
+slag_properties,B3 ((CaO+MgO)/SiO2),1.29473,
+slag_properties,B4 ((CaO+MgO)/(SiO2+Al2O3)),0.93776,
+slag_properties,Optical basicity,0.66753,
+slag_properties,Al2O3/SiO2,0.38065,
+slag_properties,Viscosity (Pa.s),3.4865,
+slag_properties,Density (kg/m3),2543.80927,
+slag_properties,Elec. conductivity (S/m),30.6892,
+slag_properties,Thermal cond. (W/m/K),1.92336,
+slag_properties,Surface tension (N/m),0.48344,
+slag_properties,Liquidus (degC),1428.79419,
+slag_properties,Superheat (degC),131.20581,
+slag_properties,Foaming index (s),11.43338,
+slag_properties,Sulphide capacity,0.03399,
+metal_properties,Density (kg/m3),6738.66491,
+metal_properties,Viscosity (mPa.s),6.99115,
+metal_properties,Liquidus (degC),1271.83075,
+metal_properties,Superheat (degC),228.16925,
+metal_properties,C saturation (wt%),5.04985,
+metal_properties,C / C_sat,0.69309,
+metal_properties,Surface tension (N/m),1.80355,
+heat_balance_MJ_per_tHM,Charge enthalpy in (abs.),-4029.13519,MJ/tHM
+heat_balance_MJ_per_tHM,Hot metal out (abs.),1207.28842,MJ/tHM
+heat_balance_MJ_per_tHM,Slag out (abs.),-3458.03177,MJ/tHM
+heat_balance_MJ_per_tHM,Slag mixing enthalpy,-20.18975,MJ/tHM
+heat_balance_MJ_per_tHM,Off-gas out (abs.),-149.96526,MJ/tHM
+heat_balance_MJ_per_tHM,Calcination + moisture,11.67048,MJ/tHM
+heat_balance_MJ_per_tHM,Net process heat,1608.23682,MJ/tHM
+heat_balance_MJ_per_tHM,Refractory + shell loss,725.35645,MJ/tHM
+heat_balance_MJ_per_tHM,  Hot metal sensible+fusion,1160.04619,MJ/tHM
+heat_balance_MJ_per_tHM,  Hot metal dissolution,47.24224,MJ/tHM
+heat_balance_MJ_per_tHM,  Slag sensible (to liquidus),437.06974,MJ/tHM
+heat_balance_MJ_per_tHM,  Slag latent (solution),95.50358,MJ/tHM
+heat_balance_MJ_per_tHM,  Slag superheat,46.31945,MJ/tHM
+heat_balance_MJ_per_tHM,Total supplied to bath,2333.59326,MJ/tHM
+temperatures_C,Hot metal tap,1500.0,degC
+temperatures_C,Slag,1560.0,degC
+temperatures_C,Off-gas,1450.0,degC
+temperatures_C,DRI feed,600.0,degC
+closure,Fe,-0.0,%
+closure,Si,-1e-05,%
+closure,Ca,0.0,%
+closure,Mg,0.0,%
+closure,Al,-0.0,%
+closure,Mn,0.0,%
+closure,Ti,0.0,%
+closure,P,0.0,%
+closure,S,-0.0,%
+closure,C,0.57167,%
+closure,max_abs_error_pct,0.57167,%
