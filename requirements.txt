@@ -1,0 +1,20 @@
+# ESF-DT :: Electric Smelting Furnace Digital Twin
+# Extractmet Private Limited -- runtime requirements
+
+# --- engine (required) -------------------------------------------------
+numpy>=1.24
+
+# --- figures and validation suite --------------------------------------
+matplotlib>=3.7
+
+# --- web workbench (gui/esf_streamlit.py) ------------------------------
+streamlit>=1.30
+pandas>=2.0
+
+# --- native desktop application (gui/esf_gui_tk.py) --------------------
+# Tkinter ships with CPython on Windows and macOS.
+# On Debian/Ubuntu:   sudo apt-get install python3-tk
+# (no pip package required)
+
+# --- browser console (web/esf_console.html) ----------------------------
+# no dependencies at all -- open the file in any browser
