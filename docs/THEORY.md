@@ -268,9 +268,39 @@ hour campaign solves in a few seconds. Per step:
 8. test the alarm conditions and log any transition;
 9. write the trajectory.
 
-The freeboard has negligible thermal mass and is treated as quasi-steady, its
-temperature sitting between the radiating slag surface and the cooled roof
-hot face, lifted by post-combustion of CO.
+The freeboard has negligible thermal mass and is treated as quasi-steady. Its
+temperature follows from an energy balance rather than from a mixing rule: the
+gas is a participating medium that absorbs from the slag surface below,
+radiates and convects to the water-cooled roof and upper sidewall above, and
+is carried through at the rate the reactions and the ingress air supply it,
+with post-combustion of CO releasing heat inside the gas itself,
+
+$$\dot m c_p (T_g - T_{in}) = Q_{pc}
+  + \varepsilon_g \sigma A_b (T_s^4 - T_g^4)
+  - \varepsilon_g \sigma A_r (T_g^4 - T_r^4)
+  - \varepsilon_g \sigma A_w (T_g^4 - T_w^4)
+  + h A_b (T_s - T_g) - h A_r (T_g - T_r) - h A_w (T_g - T_w)$$
+
+Every term on the right falls as \(T_g\) rises while the left side rises, so
+the balance has a single root, found by bisection. The gas is bounded below by
+the coldest surface it sees and above by its inlet temperature plus the
+adiabatic post-combustion rise.
+
+The grey-gas emissivity is evaluated on the freeboard composition computed
+from the gas streams themselves, not on a prescribed one. Ingress air is the
+larger part of the freeboard mass flow on a furnace of this size and dilutes
+the radiating species: about 28 % CO and 6 % CO2 by mole at the base case,
+giving an emissivity near 0.31.
+
+Earlier versions of this model took the gas temperature as the mean of the
+slag temperature and the roof hot face plus a post-combustion rise capped at
+150 K. That rule entered the water-cooled roof as a heat source of the same
+weight as the bath, and the roof hot face is itself a response to the gas
+temperature through the lining network, so the two drove one another upwards
+with a loop gain of one half. The gas settled about 204 K above the bath that
+is its only heat source and the roof hot face above the bath as well, which
+in turn suppressed the open-bath radiation debit of section 3.3, at times to
+zero. Both faults are removed by the balance above.
 
 ---
 

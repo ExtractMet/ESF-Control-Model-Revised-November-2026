@@ -241,9 +241,26 @@ def cross_check(force: bool = False):
     global _cross_cache
     if _cross_cache is not None and not force:
         return _cross_cache
+    # The steady state is solved on the same heat-loss basis as the
+    # transient, which is the geometry network.  It was previously solved
+    # with an assumed 10 % loss fraction while the transient computed
+    # about 24 %, so the two were compared on different energy bases and
+    # the specific energies could not agree: the difference that appeared
+    # in the comparison was the difference between the two loss
+    # assumptions, not between the two solvers.  Productivity is set from
+    # the feed rate and the yield so that the loss per tonne is referred
+    # to the same production as the transient reaches.
+    ss_yield = run_static(dri_name=CROSS_DRI, metallisation_pct=CROSS_MR,
+                          tap_temperature_C=CROSS_TAP_C,
+                          target_basicity_B2=CROSS_B2,
+                          target_C_in_HM_pct=CROSS_C_IN_HM, **BASE)
+    f0 = (ss_yield["outputs_kg"]["Hot metal"]
+          / ss_yield["inputs_kg"]["DRI"])
     ss = run_static(dri_name=CROSS_DRI, metallisation_pct=CROSS_MR,
                     tap_temperature_C=CROSS_TAP_C, target_basicity_B2=CROSS_B2,
-                    target_C_in_HM_pct=CROSS_C_IN_HM, **BASE)
+                    target_C_in_HM_pct=CROSS_C_IN_HM,
+                    heat_loss_mode="geometry",
+                    productivity_tHM_h=CROSS_FEED_T_H * f0)
     k = ss["KPI"]
     f = ss["outputs_kg"]["Hot metal"] / ss["inputs_kg"]["DRI"]
     c_kg_t_dri = k["Carbon_charged_kg_tHM"] * f

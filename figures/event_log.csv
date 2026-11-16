@@ -1,5 +1,5 @@
 t_min,clock,type,message
-0.0,00:00:00,START,"Simulation started - DRI-A (13.8 % gangue), MR 94.0 %, power 112.0 MW"
+0.0,00:00:00,START,"Simulation started - DRI-A (13.8 % gangue), MR 94.0 %, power 116.0 MW"
 0.0,00:00:00,WARNING,Slag viscosity above 1.2 Pa.s - poor stirring and slow melting
 25.0,00:25:00,TAP-SLAG,Slag tap opened - target 24 t over 8 min
 33.0,00:33:00,TAP-SLAG-CLOSE,Slag tap-hole closed
@@ -41,4 +41,4 @@ t_min,clock,type,message
 393.0,06:33:00,TAP-SLAG-CLOSE,Slag tap-hole closed
 415.0,06:55:00,TAP-METAL,Metal tap opened - target 150 t over 12 min
 415.0,06:55:00,TAP-SLAG,Slag tap opened - target 24 t over 8 min
-420,07:00:00,END,"Simulation finished - 964.6 t HM, 327.5 t slag, 709.2 MWh"
+420,07:00:00,END,"Simulation finished - 964.6 t HM, 327.5 t slag, 784.8 MWh"

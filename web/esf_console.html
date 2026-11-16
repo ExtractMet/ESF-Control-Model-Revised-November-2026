@@ -1096,12 +1096,56 @@ function solveDynamic(I,D){
       Math.max(mS*cpS,1e3);
     Tm+=(Qsm-hl.zones.metal_wall.Q-hl.zones.hearth.Q)*dt/
       Math.max(mM*cpM,1e3);
-    const mgs=Math.max(0.05,nCO/dt*MW.CO+CO2calc/dt+45*1.29/3600*D.dri);
-    const dTpc=Math.min(150,Qpc/Math.max(mgs*1200,1e3));
-    const Tgt=0.5*Ts+0.5*ThfRoof+dTpc;
-    Tg+=Math.max(-20,Math.min(20,0.25*(Tgt-Tg)));
-    Tg=Math.max(873,Math.min(2673,Tg));
     Ts=Math.max(1573,Math.min(2473,Ts)); Tm=Math.max(1573,Math.min(2373,Tm));
+
+    /* --- freeboard gas temperature -----------------------------------
+       The gas holds a negligible amount of heat next to the baths, so
+       its temperature comes from a steady balance rather than from an
+       accumulation term.  It is a participating medium: it absorbs from
+       the slag surface below, radiates to the water-cooled roof and
+       upper sidewall above, and is carried through at the rate the
+       reactions and the ingress air supply it, with post-combustion of
+       CO releasing Qpc inside the gas itself.
+
+         m cp (Tg-Tin) = Qpc + e s Ab (Ts^4-Tg^4) - e s Ar (Tg^4-Tr^4)
+                         - e s Aw (Tg^4-Tw^4) + h Ab (Ts-Tg)
+                         - h Ar (Tg-Tr) - h Aw (Tg-Tw)
+
+       This replaces Tg = 0.5 Ts + 0.5 Troof + dTpc, which entered the
+       cooled roof as a heat source carrying the same weight as the bath
+       and capped the post-combustion rise at an arbitrary 150 K.  Here
+       the cooled surfaces appear only in loss terms, so the gas is
+       bounded below by the coldest surface it sees and above by the
+       slag temperature plus the adiabatic post-combustion rise.        */
+    const mCO2s=CO2calc/dt, mAirs=45*1.29/3600*D.dri;
+    const mgs=Math.max(0.05,nCO/dt*MW.CO+mCO2s+mAirs);
+    const cpg=1200;
+    const Tgin=((nCO/dt*MW.CO+mCO2s)*Ts+mAirs*298.15)/mgs;
+    /* freeboard composition on a mole basis, from the actual streams */
+    const nCOo=Math.max(0,nCO-nCO*D.pcr)/dt;
+    const nCO2o=nCO*D.pcr/dt+mCO2s/MW.CO2, nAiro=mAirs/0.028850;
+    const nTo=Math.max(1e-9,nCOo+nCO2o+nAiro);
+    const yCO=nCOo/nTo, yCO2=nCO2o/nTo;
+    const Ab=G.L*G.W, Ar=Ab*1.05, Aw=2*(G.L+G.W)*G.hFb;
+    const Lb=3.6*(Ab*G.hFb)/Math.max(Ar+Aw+Ab,1);
+    const pL=(yCO2+0.35*yCO)*Lb;
+    const epsG=Math.max(0.05,Math.min(0.6,
+      0.55*(1-Math.exp(-1.35*pL))*Math.pow(1600/Math.max(Tg,800),0.45)));
+    const ThfWall=hl.zones.freeboard.Thot, Crad=epsG*SIGMA, hcv=22;
+    const fbRes=Tq=>Qpc-mgs*cpg*(Tq-Tgin)
+      +Crad*Ab*(Math.pow(Ts,4)-Math.pow(Tq,4))
+      -Crad*Ar*(Math.pow(Tq,4)-Math.pow(ThfRoof,4))
+      -Crad*Aw*(Math.pow(Tq,4)-Math.pow(ThfWall,4))
+      +hcv*Ab*(Ts-Tq)-hcv*Ar*(Tq-ThfRoof)-hcv*Aw*(Tq-ThfWall);
+    let lo=500,hi=2600,Tqs;
+    if(fbRes(lo)<0){Tqs=lo;} else if(fbRes(hi)>0){Tqs=hi;} else {
+      for(let q=0;q<48;q++){const mid=0.5*(lo+hi);
+        if(fbRes(mid)>0){lo=mid;} else {hi=mid;}}
+      Tqs=0.5*(lo+hi);}
+    /* hot faces are from the previous network solve, so relax rather
+       than set outright; this changes the path, not the balance        */
+    Tg+=0.50*(Tqs-Tg);
+    Tg=Math.max(873,Math.min(2673,Tg));
 
     /* --- tapping --- */
     if(tmin>=nMT&&mtUntil<tmin){mtUntil=tmin+D.mtDur;

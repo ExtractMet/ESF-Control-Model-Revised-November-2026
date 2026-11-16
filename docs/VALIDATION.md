@@ -79,10 +79,10 @@ slag retains 0.15–0.30 wt % MnO.
 |---|---|---|---|
 | Single-valued comparisons counted | 30 | 44 | **17** |
 | Interval tests counted | 6 | 8 | **31** |
-| Mean absolute relative deviation | 8.79 % | 8.53 % | **13.11 %** |
+| Mean absolute relative deviation | 8.79 % | 8.53 % | **14.60 %** |
 | Median | 4.45 % | 4.96 % | **3.95 %** |
 | Within 10 % | 24 of 30 | 32 of 44 | **12 of 17** |
-| Within 15 % | 25 of 30 | 34 of 44 | **13 of 17** |
+| Within 15 % | 25 of 30 | 34 of 44 | **14 of 17** |
 | Interval tests met | 6 of 6 | 18 of 20 | **22 of 31** |
 | Physical-correctness sweep | 0 failures in 158 | 0 failures in 178 | **0 failures in 178** |
 
@@ -139,8 +139,8 @@ doing so would have made the test circular.
 | Quantity | ESF-DT | Measured | Deviation |
 |---|---:|---:|---:|
 | Carbon for full FeO reduction + 3 wt % C | 59.2 kg-C/tHM | 66 kg-C/tHM | −10 % |
-| Slag FeO with a hot heel | 4.2 wt% | 3.0 wt% | +41 % |
-| Hot metal C with a hot heel | 3.23 wt% | 2.8 wt% | +15 % |
+| Slag FeO with a hot heel | 5.0 wt% | 3.0 wt% | +67 % |
+| Hot metal C with a hot heel | 3.20 wt% | 2.8 wt% | +14 % |
 
 ### 3.4 Design envelope
 
@@ -212,8 +212,8 @@ design range of 500–1200, and a slag/metal ratio of 0.25 against 0.07–0.25.
 | Tenova iBlue envelope | Operating SEC | 769.3 | 500.0-1200.0 | kWh/tHM | in window |
 | Tenova iBlue envelope | Slag/metal ratio | 0.247 | 0.07-0.25 | - | in window |
 | Low-grade H2-DRI (lab) | Carbon for full FeO reduction + 3 wt% C | 59.044 | 66.0 | kg-C/tHM | -10.54 |
-| Low-grade H2-DRI (lab) | Slag FeO with a hot heel | 4.232 | 3.0 | wt% | 41.06 |
-| Low-grade H2-DRI (lab) | Hot metal C with a hot heel | 3.234 | 2.8 | wt% | 15.51 |
+| Low-grade H2-DRI (lab) | Slag FeO with a hot heel | 5.023 | 3.0 | wt% | 67.42 |
+| Low-grade H2-DRI (lab) | Hot metal C with a hot heel | 3.204 | 2.8 | wt% | 14.44 |
 | Dynamic 7 h campaign | Operating SEC | 707.42 | 762.6 | kWh/tHM | -7.24 |
 | Dynamic 7 h campaign | Slag rate | 278.525 | 300.0 | kg/tHM | -7.16 |
 | Dynamic 7 h campaign | Heat to cooling circuit (share of input) | 29.871 | 40.0 | % | -25.32 |
@@ -224,7 +224,7 @@ design range of 500–1200, and a slag/metal ratio of 0.25 against 0.07–0.25.
 
 | Quantity | Model | Literature | Deviation | Assessment |
 |---|---:|---:|---:|---|
-| Slag FeO with a hot heel | 4.2 | 3.0 wt% | +41 % | A 70 g laboratory melt against a model of a 112 MW furnace; the direction and magnitude are right and the hot-heel effect is reproduced |
+| Slag FeO with a hot heel | 5.0 | 3.0 wt% | +67 % | A 70 g laboratory melt against a model of a 116 MW furnace; the direction and the hot-heel effect are reproduced but the magnitude is not. The deviation widened from 41 % when the freeboard correction of v1.2 restored the open-bath radiation debit: the bath runs cooler, FeO reduction is slower, and more FeO is left in the slag. It is reported rather than tuned away |
 | dSEC/dT | 14.0 | 20.0 kWh/tHM per 25 °C | −30 % | Temperature sensitivity is about two thirds of the published slope, although absolute SEC at each temperature matches well |
 | dSEC/dscrap | −3.20 | −2.5 kWh/tHM per wt% | +28 % | Over-sensitive to scrap |
 | Heat to the cooling circuit | 29.9 | 35–45 % | −25 % | Just below the band; the default lining carries more hot-face refractory over the panels than the reference furnaces |

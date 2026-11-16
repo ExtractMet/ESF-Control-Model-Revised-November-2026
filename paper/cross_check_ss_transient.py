@@ -34,9 +34,17 @@ C_IN_HM = 3.40
 
 def main():
     # ---- 1. steady state -------------------------------------------------
-    ss = run_static(dri_name=DRI, metallisation_pct=MR, tap_temperature_C=TAP_C,
+    # Same heat-loss basis as the transient: the geometry network, with
+    # productivity set from the feed rate and the yield.  Solved once on
+    # the loss-fraction basis first only to obtain that yield.
+    _y = run_static(dri_name=DRI, metallisation_pct=MR, tap_temperature_C=TAP_C,
                     target_basicity_B2=B2, target_C_in_HM_pct=C_IN_HM,
                     heat_loss_mode="fraction", heat_loss_fraction=0.10)
+    _f0 = _y["outputs_kg"]["Hot metal"] / _y["inputs_kg"]["DRI"]
+    ss = run_static(dri_name=DRI, metallisation_pct=MR, tap_temperature_C=TAP_C,
+                    target_basicity_B2=B2, target_C_in_HM_pct=C_IN_HM,
+                    heat_loss_mode="geometry",
+                    productivity_tHM_h=FEED_T_H * _f0)
     k = ss["KPI"]
 
     # per tonne of DRI rather than per tonne of hot metal, which is what the

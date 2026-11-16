@@ -21,6 +21,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from esf_dt.static_model import (run_static, DRI_LIBRARY, CARBON_LIBRARY,
                                  FLUX_LIBRARY)
 from esf_dt.dynamic_model import run_dynamic
+from esf_dt import properties as pr
 
 # --------------------------------------------------------------------------
 # Physical bounds.  Outside these a result is wrong, not merely unusual.
@@ -61,6 +62,14 @@ def guarded(case, fn):
     except ValueError as e:
         print(f"    (correctly refused) {case}: {str(e)[:70]}...")
         return None
+
+
+def _dyn_slag_wt(d: dict, j: int) -> dict:
+    """Slag analysis at step j of a transient run, for a liquidus call."""
+    t = d["trajectory"]
+    return {ox: t[f"{ox}_pct"][j]
+            for ox in ("CaO", "SiO2", "MgO", "Al2O3", "FeO", "MnO")
+            if f"{ox}_pct" in t}
 
 
 def check_static(case: str, r: dict) -> None:
@@ -169,8 +178,29 @@ def check_dynamic(case: str, d: dict) -> None:
             flag(case, f"trajectory {key} contains NaN")
         if key in ("m_metal_t", "m_slag_t", "power_MW") and min(v) < 0:
             flag(case, f"trajectory {key} goes negative ({min(v):.2f})")
-    if min(t["T_slag_C"]) < min(t["T_metal_C"]) - 60:
-        flag(case, "slag colder than metal by more than 60 K")
+    # Slag colder than metal.  Two corrections to this test.  First, it
+    # compared the minimum of each trace, which need not occur at the
+    # same instant, so it could fire on an inversion that never existed;
+    # the comparison is now made step by step.  Second, an inversion is
+    # a symptom, not a cause: if the charge is cold enough, or the feed
+    # fast enough, that the slag drops below its own liquidus, the bath
+    # has frozen and the condition is not operable, so metal hotter than
+    # a freezing slag is the correct answer rather than a solver fault.
+    # That case is counted with the other inoperable conditions.  An
+    # inversion while the slag is still liquid remains a failure.
+    worst = min(s - m for s, m in zip(t["T_slag_C"], t["T_metal_C"]))
+    if worst < -60.0:
+        T_liq = [pr.slag_liquidus(_dyn_slag_wt(d, j)) - 273.15
+                 for j in range(len(t["T_slag_C"]))]
+        frozen = min(s - q for s, q in zip(t["T_slag_C"], T_liq))
+        if frozen < 0.0:
+            sub_liquidus.append(
+                f"{case} -> slag falls {-frozen:.0f} K below its own "
+                f"liquidus, so the bath freezes and the condition is not "
+                f"operable (slag {worst:.0f} K under the metal)")
+        else:
+            flag(case, f"slag colder than metal by {-worst:.0f} K while "
+                       f"the slag is still above its liquidus")
 
 
 # ==========================================================================

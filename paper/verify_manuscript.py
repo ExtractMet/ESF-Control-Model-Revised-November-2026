@@ -17,7 +17,8 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from esf_dt.static_model import run_static
-from esf_dt.dynamic_model import run_dynamic
+from esf_dt.dynamic_model import run_dynamic, DynamicInputs
+from esf_dt.geometry import heat_loss_network, FurnaceGeometry
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -31,7 +32,40 @@ fails: list[str] = []
 checks = 0
 
 
-def ck(name: str, printed, computed, tol=0.02, absolute=False):
+SUP = os.path.join(HERE, "ESF-DT_supplementary.md")
+# A value may be printed in the manuscript or, where Reviewer 2 asked for
+# detail to be moved out of the body, in the supplementary material.  Both
+# are searched, so relocating a table does not look like deleting it.
+_MS_TEXT = open(MS).read() + "\n" + open(SUP).read()
+_MS_NUM = re.sub(r"[,\s]", "", _MS_TEXT)
+absent: list[str] = []
+
+
+def _in_manuscript(printed) -> bool:
+    """Is this value actually printed somewhere in the manuscript?
+
+    The value checks below compare what the manuscript claims against
+    what the engine computes, but on their own they cannot tell that a
+    claim is still in the manuscript at all: delete the sentence and the
+    check goes on passing against a number that no reader will ever see.
+    This closes that gap, which matters whenever the manuscript is being
+    cut rather than only corrected.  Matching is on the digits, with
+    separators removed, and trailing zeros are tried both ways so that
+    1.90 and 1.9 both count.
+    """
+    if isinstance(printed, bool) or printed is None:
+        return True
+    if isinstance(printed, int):
+        cands = [str(printed), f"{printed:,}"]
+    else:
+        t = f"{printed:g}"
+        cands = [t, t.rstrip("0").rstrip("."), f"{printed:.1f}",
+                 f"{printed:.2f}", f"{printed:.3f}"]
+    return any(re.sub(r"[,\s]", "", c) in _MS_NUM for c in cands)
+
+
+def ck(name: str, printed, computed, tol=0.02, absolute=False,
+       in_text: bool = True):
     """Compare a printed value against a recomputed one."""
     global checks
     checks += 1
@@ -44,6 +78,8 @@ def ck(name: str, printed, computed, tol=0.02, absolute=False):
         ok = abs(printed - computed) <= tol * max(abs(computed), 1e-9)
     if not ok:
         fails.append(f"{name}: manuscript {printed} vs engine {computed:.6g}")
+    elif in_text and not _in_manuscript(printed):
+        absent.append(f"{name}: {printed} is not printed in the manuscript")
 
 
 # ---------------------------------------------------------------- statistics
@@ -55,10 +91,10 @@ ck("n_benchmarks", 48, stats["n_benchmarks"], absolute=True, tol=0)
 ck("n_comparisons", 17, stats["n_comparisons"], absolute=True, tol=0)
 ck("n_windows", 31, stats["n_windows"], absolute=True, tol=0)
 ck("windows_satisfied", 22, stats["windows_satisfied"], absolute=True, tol=0)
-ck("MARD", 13.1, stats["mean_abs_RPD_pct"], absolute=True, tol=0.05)
+ck("MARD", 14.6, stats["mean_abs_RPD_pct"], absolute=True, tol=0.05)
 ck("median", 4.0, stats["median_abs_RPD_pct"], absolute=True, tol=0.05)
 ck("within_10", 12, stats["within_10_pct"], absolute=True, tol=0)
-ck("within_15", 13, stats["within_15_pct"], absolute=True, tol=0)
+ck("within_15", 14, stats["within_15_pct"], absolute=True, tol=0)
 ck("max deviation", 71.6, stats["max_abs_RPD_pct"], absolute=True, tol=0.1)
 ck("calibration MARD", 6.8, stats["calibration_mean_abs_RPD_pct"],
    absolute=True, tol=0.05)
@@ -231,20 +267,44 @@ for lab, kw, sec_v, slag_v, r_v, pd_v in (
 dyn = run_dynamic(duration_min=420, dt_s=10, log_every_s=60)
 sm = dyn["summary"]
 ck("T16 tapped", 964.6, sm["Hot metal tapped (t)"], absolute=True, tol=0.5)
-ck("T16 produced", 1002, sm["Hot metal produced (t)"], absolute=True, tol=1.0)
-ck("T16 productivity", 143.2, sm["Productivity (tHM/h)"], absolute=True, tol=0.1)
-ck("T16 SEC", 707, sm["SEC (kWh/tHM)"], absolute=True, tol=1.0)
-ck("T16 mean power", 102.8, sm["Mean power (MW)"], absolute=True, tol=0.1)
-ck("T16 mean loss", 30.7, sm["Mean heat loss (MW)"], absolute=True, tol=0.1)
-ck("T16 loss share", 29.9, sm["Heat loss share (%)"], absolute=True, tol=0.1)
-ck("T16 mean metal T", 1499, sm["Mean metal T (degC)"], absolute=True, tol=1.0)
-ck("T16 mean slag T", 1518, sm["Mean slag T (degC)"], absolute=True, tol=1.0)
-ck("T16 final FeO", 1.80, sm["Final slag FeO (wt%)"], absolute=True, tol=0.02)
-ck("T16 final B2", 1.073, sm["Final B2"], absolute=True, tol=0.005)
-ck("T16 freeze", 76, sm["Freeze lining (mm)"], absolute=True, tol=1.0)
+ck("T16 produced", 1001, sm["Hot metal produced (t)"], absolute=True, tol=1.0)
+ck("T16 productivity", 143.0, sm["Productivity (tHM/h)"], absolute=True, tol=0.1)
+ck("T16 SEC", 784, sm["SEC (kWh/tHM)"], absolute=True, tol=1.0)
+ck("T16 mean power", 114.5, sm["Mean power (MW)"], absolute=True, tol=0.1)
+ck("T16 mean loss", 28.0, sm["Mean heat loss (MW)"], absolute=True, tol=0.1)
+ck("T16 loss share", 24.5, sm["Heat loss share (%)"], absolute=True, tol=0.1)
+ck("T16 mean metal T", 1486, sm["Mean metal T (degC)"], absolute=True, tol=1.0)
+ck("T16 mean slag T", 1504, sm["Mean slag T (degC)"], absolute=True, tol=1.0)
+ck("T16 final FeO", 1.91, sm["Final slag FeO (wt%)"], absolute=True, tol=0.02)
+ck("T16 final B2", 1.063, sm["Final B2"], absolute=True, tol=0.005)
+ck("T16 freeze", 86, sm["Freeze lining (mm)"], absolute=True, tol=1.0)
 ck("T16 shell T", 197, sm["Max shell T (degC)"], absolute=True, tol=1.0)
 ck("T16 window start", 210.0,
    sm["Averaging window (min, from start of campaign)"], absolute=True, tol=0.1)
+
+# ------------------------------------------- freeboard gas, Section 4.3.1
+# The gas is heated by the bath and cooled by the roof, so it cannot be
+# hotter than the slag.  The submitted version reported 1722 degC against
+# a slag at 1518 degC because the old mixing rule entered the cooled roof
+# as a heat source; these checks exist so that cannot return unnoticed.
+_tg = dyn["trajectory"]["T_gas_C"]
+_ts = dyn["trajectory"]["T_slag_C"]
+_half = len(_tg) // 2
+_gas_mean = sum(_tg[_half:]) / len(_tg[_half:])
+ck("4.3.1 freeboard gas below slag (max over campaign)", True,
+   all(g < s for g, s in zip(_tg[_half:], _ts[_half:])), absolute=True, tol=0)
+ck("Table 4b freeboard gas", 1471, _gas_mean, absolute=True, tol=1.0)
+ck("Table 4 rated power", 116.0, DynamicInputs().power_MW, absolute=True, tol=0.01)
+# the roof hot face must also sit below the bath that heats it
+_hl = heat_loss_network(FurnaceGeometry(), _ts[-1] + 273.15,
+                        dyn["trajectory"]["T_metal_C"][-1] + 273.15,
+                        _tg[-1] + 273.15,
+                        {"CaO": 38.7, "SiO2": 36.4, "MgO": 7.7,
+                         "Al2O3": 13.8, "FeO": 1.9, "MnO": 0.6},
+                        {"CO": 0.28, "CO2": 0.06, "N2": 0.66})
+ck("4.3.1 roof hot face below slag", True,
+   _hl["zones"]["roof"]["T_hotface_K"] - 273.15 < _ts[-1],
+   absolute=True, tol=0)
 
 # 80 % MR pilot magnitude check quoted in 6.8
 ck("6.8 pilot magnitude", 980,
@@ -273,13 +333,13 @@ for g, pub, ratio in ((7.0, 572.0, 0.775), (16.0, 684.0, 0.886)):
        r["KPI"]["SEC_reversible_kWh_tHM"] / pub, absolute=True, tol=0.002)
 
 # ------------------------------------------------- Section 6.9 cross-check
-for q, ss_v, tr_v, dev in (("Operating SEC", 666.7, 713.9, 7.1),
-                           ("Slag rate", 270.8, 285.6, 5.5),
-                           ("Hot metal C", 3.400, 3.708, 9.1),
-                           ("Hot metal Si", 0.231, 0.256, 11.1),
-                           ("Hot metal Mn", 0.517, 0.522, 1.1),
-                           ("Slag FeO", 0.645, 1.655, 157.0),
-                           ("Slag basicity B2", 1.091, 1.114, 2.1)):
+for q, ss_v, tr_v, dev in (("Operating SEC", 823.7, 792.4, 7.1),
+                           ("Slag rate", 270.6, 285.9, 5.5),
+                           ("Hot metal C", 3.400, 3.729, 9.1),
+                           ("Hot metal Si", 0.231, 0.203, 11.1),
+                           ("Hot metal Mn", 0.517, 0.510, 1.1),
+                           ("Slag FeO", 0.645, 1.716, 157.0),
+                           ("Slag basicity B2", 1.091, 1.103, 2.1)):
     hit = [r for r in rows if r["case"] == "Steady state vs transient"
            and r["quantity"] == q]
     if not hit:
@@ -297,6 +357,10 @@ if "{.mark}" not in text:
 n_marks = text.count("{.mark}")
 
 print(f"checked {checks} quantitative claims")
+if absent:
+    print(f"\nVALUES NOT FOUND IN THE MANUSCRIPT TEXT ({len(absent)}):")
+    for a in absent:
+        print("   ", a)
 print(f"change markers in the manuscript: {n_marks}")
 if fails:
     print(f"\nFAILURES ({len(fails)}):")

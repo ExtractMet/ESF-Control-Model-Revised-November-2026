@@ -616,7 +616,7 @@ class App(tk.Tk):
                  ("carbon_feed_kg_t_dri", "C (kg/t)", 55.0, (10, 150, 1)),
                  ("lime_feed_kg_t_dri", "Lime (kg/t)", 73.0, (0, 200, 1)),
                  ("dolo_feed_kg_t_dri", "Dolo (kg/t)", 36.0, (0, 150, 1)),
-                 ("power_MW", "Rated power (MW)", 112.0, (5, 300, 1)),
+                 ("power_MW", "Rated power (MW)", 116.0, (5, 300, 1)),
                  ("target_metal_T_C", "T setpoint (degC)", 1500.0,
                   (1400, 1560, 5)),
                  ("metal_tap_mass_t", "Metal tap (t)", 150.0, (5, 400, 5)),

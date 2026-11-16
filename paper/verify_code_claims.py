@@ -311,9 +311,76 @@ fc = src("paper/make_flowchart.py")
 claim("R1-6", "the flowchart cites the flux equations as (24) to (26)",
       "Eqs. (24)-(26)" in fc and "Eqs. (18)-(19)" not in fc,
       "checked make_flowchart.py")
-claim("R1-6", "the flowchart cites the reaction-rate table as Table 6",
-      "Table 6, Eqs. (22)-(23)" in fc and "Table 1, Eqs. (6)-(7)" not in fc,
+claim("A7", "the flowchart carries the revised tiers, counts and rating",
+      "Two SEC tiers" in fc and "Three SEC tiers" not in fc
+      and "48 benchmarks, 17 single-valued" in fc and "116 MW" in fc
+      and "112 MW" not in fc,
+      "checked paper/make_flowchart.py")
+
+claim("R1-6", "the flowchart cites the reaction-rate table as Table 8",
+      "Table 8, Eqs. (22)-(23)" in fc and "Table 1, Eqs. (6)-(7)" not in fc,
       "checked make_flowchart.py")
+
+# ======================================================================
+# A7  freeboard gas temperature
+# ======================================================================
+dm = src("esf_dt/dynamic_model.py")
+hc = src("web/esf_console.html")
+
+claim("A7", "the circular mixing rule is gone from the Python engine",
+      "0.50 * T_s + 0.50 * T_hf_roof" not in dm
+      and "_freeboard_residual" in dm,
+      "checked esf_dt/dynamic_model.py")
+claim("A7", "the circular mixing rule is gone from the browser engine",
+      "0.5*Ts+0.5*ThfRoof" not in hc and "fbRes" in hc,
+      "checked web/esf_console.html")
+claim("A7", "the freeboard balance carries the bath as a gain term",
+      "C_rad * A_bath_fb * (T_s ** 4 - Tg ** 4)" in dm,
+      "the gas absorbs from the slag surface")
+claim("A7", "the post-combustion rise is no longer capped at 150 K",
+      "min(150.0, Q_pc" not in dm and "Math.min(150,Qpc" not in hc,
+      "checked both engines")
+claim("A7", "the freeboard composition is computed, not prescribed",
+      'self._gas_y = {"CO": n_CO_out / n_tot_out' in dm
+      and '{"CO": 0.8, "CO2": 0.15, "N2": 0.05}' not in dm,
+      "checked esf_dt/dynamic_model.py")
+claim("A7", "the open-bath radiation debit is bounded by the panel duty",
+      "Q_open_rad_gb" in dm and 'hl["zones"]["roof"]["Q_W"]' in dm,
+      "checked the Eq. (13) debit")
+
+_d = run_dynamic(duration_min=420.0)
+_t = _d["trajectory"]
+_h = len(_t["T_gas_C"]) // 2
+_g = _t["T_gas_C"][_h:]
+_s = _t["T_slag_C"][_h:]
+_gm = sum(_g) / len(_g)
+claim("A7", "the computed gas runs below the slag that heats it",
+      all(a < b for a, b in zip(_g, _s)),
+      f"gas {_gm:.0f} degC against slag {sum(_s)/len(_s):.0f} degC")
+claim("A7", "the gas agrees with the steady-state uptake input",
+      abs(_gm - 1450.0) < 60.0,
+      f"{_gm:.0f} degC against the 1450 degC input")
+claim("A7", "the base case is rated at 116 MW and is not power limited",
+      abs(DynamicInputs().power_MW - 116.0) < 1e-9
+      and _d["summary"]["Mean power (MW)"] < 115.9,
+      f"mean power {_d['summary']['Mean power (MW)']:.2f} MW of 116 MW")
+claim("A7", "neither interface overrides the engine's rated power",
+      all(str(DynamicInputs().power_MW).rstrip("0").rstrip(".") in src(f)
+          or "116.0" in src(f)
+          for f in ("gui/esf_gui_tk.py", "gui/esf_streamlit.py"))
+      and not any("112.0" in src(f)
+                  for f in ("gui/esf_gui_tk.py", "gui/esf_streamlit.py")),
+      "both GUIs default to 116 MW, as the engine does")
+
+claim("A7", "the off-gas enthalpy is reported as a flow, not a loss",
+      "offgas_enthalpy_MW" in dm and "offgas_loss_MW" not in dm,
+      "renamed; it is not a bath-side debit")
+
+ad = src("audit.py")
+claim("A7", "the slag-metal inversion test compares the same instant",
+      "min(s - m for s, m in zip" in ad
+      and "min(t[\"T_slag_C\"]) < min(t[\"T_metal_C\"]) - 60" not in ad,
+      "checked audit.py")
 
 claim("R2-4c", "the two-solver cross-check script is present and wired in",
       os.path.exists(os.path.join(HERE, "cross_check_ss_transient.py"))

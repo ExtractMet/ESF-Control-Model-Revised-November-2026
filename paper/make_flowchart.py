@@ -49,7 +49,7 @@ def band(y, t, c):
 
 # ---------------------------------------------------------------- stage A
 band(113.5, "A.  SPECIFICATION AND PHYSICAL BASIS", INK)
-box(3, 105.5, 28, 6.2, "Define scope and duty\n35 m x 11 m OSBF, 112 MW,\nsix electrodes")
+box(3, 105.5, 28, 6.2, "Define scope and duty\n35 m x 11 m OSBF, 116 MW,\nsix electrodes")
 box(36, 105.5, 28, 6.2, "Select physical sub-models\nthermochemistry, transport,\nkinetics, lining, electrical")
 box(69, 105.5, 28, 6.2, "Assemble property and\nthermochemical libraries\n[15, 23-29]")
 arrow(31, 108.6, 36, 108.6); arrow(64, 108.6, 69, 108.6)
@@ -76,7 +76,7 @@ arrow(84, 77.5, 52, 77.5, c=MOLT, style="-")
 arrow(52, 77.5, 52, 80.0, c=MOLT)
 label(68, 78.6, "no: damp and repeat", c=MOLT)
 
-box(37, 68.0, 30, 6.5, "Heat balance, Eqs. (1)-(4)\nThree SEC tiers, Eq. (28)\nClosure check, Eq. (27)")
+box(37, 68.0, 30, 6.5, "Heat balance, Eqs. (1)-(4)\nTwo SEC tiers, Eq. (28)\nClosure check, Eq. (27)")
 # "yes" branch: out to the right margin, down, into the heat balance
 arrow(97, 91.5, 99.0, 91.5, c=COOL, style="-")
 arrow(99.0, 91.5, 99.0, 71.25, c=COOL, style="-")
@@ -94,7 +94,7 @@ box(3, 44.0, 30, 6.5, "Initialise five control volumes\npile, slag, metal,\nfree
 box(37, 33.0, 30, 18.5,
     "TIME STEP, dt = 10 s\n\n1  Electrical operating point\n2  Charge feed to pile\n"
     "3  Lining network (periodic)\n4  Melt at pile interface, Eq. (5)\n"
-    "5  Mass-transfer kinetics,\n    Table 6, Eqs. (22)-(23)\n"
+    "5  Mass-transfer kinetics,\n    Table 8, Eqs. (22)-(23)\n"
     "6  Energy balances per zone\n7  Service tapping schedule\n8  Test alarms, write trajectory",
     fc="#EAF6F3", ec=COOL, fs=8.6)
 arrow(33, 47.25, 37, 47.25)
@@ -116,8 +116,8 @@ label(52, 28.8, "no: close out campaign", c=INK)
 # ---------------------------------------------------------------- stage D
 band(25.0, "D.  TWO-TIER VERIFICATION", EMB)
 box(3, 16.0, 44, 7.5,
-    "TIER 1  Literature agreement\n19 independent benchmarks, with\n"
-    "calibration-coupled and consistency\ncomparisons reported separately",
+    "TIER 1  Literature agreement\n48 benchmarks, 17 single-valued;\n"
+    "fitted and consistency comparisons\nreported separately",
     fc="#FDECEC", ec=EMB, fs=8.8)
 box(53, 16.0, 44, 7.5,
     "TIER 2  Physical admissibility\n178 configurations swept.\nClosure, bounds, convergence,\n"

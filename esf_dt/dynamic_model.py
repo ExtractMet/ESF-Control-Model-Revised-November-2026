@@ -96,9 +96,20 @@ class DynamicInputs:
     flux_particle_mm: float = 25.0
 
     # --- power --------------------------------------------------------
-    power_MW: float = 112.0                 # rated / maximum active power
+    # Rated power of the transient base case.  This was 112 MW while the
+    # freeboard gas temperature was computed from the old mixing rule,
+    # which put the roof hot face above the bath and so suppressed the
+    # open-bath radiation debit, at times to zero.  With that debit
+    # restored, 112 MW saturates the temperature controller at 160 t/h
+    # and the hot metal settles about 24 K below setpoint; 116 MW leaves
+    # the loop with authority to spare at the same feed rate.
+    power_MW: float = 116.0                 # rated / maximum active power
     power_control: str = "temperature"      # temperature | fixed | schedule
     power_min_fraction: float = 0.35
+    # The integral is clamped below at +/-2.0e4 K.s, which with Ki caps
+    # the integral's authority at 4.0 MW.  A steady bias larger than that
+    # cannot be removed, so a residual offset of order 10 K between hot
+    # metal and setpoint is a property of this tuning, not of the solver.
     Kp_power_MW_per_K: float = 1.10
     Ki_power_MW_per_Ks: float = 2.0e-4
     charge_enthalpy_MJ_kg: float = 1.15     # feed-forward melting demand
@@ -190,6 +201,9 @@ class ESFDynamicModel:
         self.traj: Dict[str, List[float]] = {}
         self._hl_cache = None
         self._hl_last_t = -1e9
+        # seed freeboard composition; replaced each step by the
+        # composition computed from the actual gas streams
+        self._gas_y = {"CO": 0.30, "CO2": 0.08, "N2": 0.62}
 
     # ------------------------------------------------------------------
     def log_event(self, t_min: float, kind: str, message: str,
@@ -266,7 +280,7 @@ class ESFDynamicModel:
                 "slag_tapped_t", "slag_rate_kg_t", "Fe_yield_pct",
                 "dri_feed_t_h", "flux_feed_t_h", "carbon_feed_t_h",
                 "wall_loss_MW", "roof_loss_MW", "hearth_loss_MW",
-                "offgas_loss_MW", "arc_rad_MW", "electrode_kg_cum",
+                "offgas_enthalpy_MW", "arc_rad_MW", "electrode_kg_cum",
                 "CO2_intensity_t_t", "power_density_MW_m2"]
         traj = {k: [] for k in keys}
 
@@ -388,8 +402,15 @@ class ESFDynamicModel:
             cum["flux_charged_t"] += (lime_rate + dolo_rate) * dt / 1000.0
 
             # ---- 3. lining heat losses (quasi-steady) --------------
+            # Freeboard composition on a mole basis, carried from the
+            # previous step.  It is used for the grey-gas emissivity, so
+            # it has to be the composition the gas actually has: the
+            # reaction CO, the CO2 of calcination and post-combustion,
+            # and the ingress air, which on this furnace is the larger
+            # part of the freeboard mass flow and dilutes the radiating
+            # species considerably.
+            gas_y = self._gas_y
             if t_min - self._hl_last_t >= i.lining_update_every_min or self._hl_cache is None:
-                gas_y = {"CO": 0.8, "CO2": 0.15, "N2": 0.05}
                 self._hl_cache = heat_loss_network(
                     geo, T_s, T_m, T_g, slag_wt, gas_y,
                     arc_power_W=el["P_arc_MW"] * 1e6,
@@ -406,8 +427,21 @@ class ESFDynamicModel:
             # upper sidewall; this is a slag-side energy debit and it is what
             # the water-cooled panels above the bath ultimately remove.
             eps_bath = pr.slag_emissivity(slag_wt)
-            Q_open_rad = max(0.0, eps_bath * pr.SIGMA_SB * geo.bath_area_free
-                             * (T_s ** 4 - T_hf_roof ** 4) / 1.30)
+            Q_open_rad_gb = max(0.0, eps_bath * pr.SIGMA_SB
+                                * geo.bath_area_free
+                                * (T_s ** 4 - T_hf_roof ** 4) / 1.30)
+            # Energy conservation bounds this debit: whatever the panels
+            # above the bath remove has to have arrived either from the
+            # bath or from the brush arcs, so the slag-side debit cannot
+            # exceed the roof and upper-sidewall duty less the arc's own
+            # radiation into the freeboard.  The grey-body figure is kept
+            # as the upper bound.  Without this cap the grey-body estimate
+            # over-debits the slag by one to two megawatts, which is the
+            # bound the browser engine has always applied.
+            Q_open_rad = max(0.0, min(
+                Q_open_rad_gb,
+                hl["zones"]["roof"]["Q_W"]
+                + hl["zones"]["freeboard"]["Q_W"] - P_fb))
 
             # ---- 4. pile heating and melting ----------------------
             m_pile = sum(pile.values())
@@ -636,6 +670,17 @@ class ESFDynamicModel:
             dH_rxn /= dt                                        # W
             dH_rxn += Q_calcine                                 # W
 
+            # Enthalpy the off-gas carries past the uptake, on a 298.15 K
+            # datum.  This is a plant-level loss, not a bath-side one, and
+            # it is deliberately absent from the slag and metal balances
+            # below: the CO is generated in situ at bath temperature, and
+            # the heat needed to bring it there is already carried by the
+            # reaction enthalpies in dH_rxn, so debiting it a second time
+            # here would count it twice.  The steady-state model works on
+            # absolute enthalpies from the same datum for every stream, so
+            # it does debit the gas at the uptake temperature; the two
+            # conventions differ in bookkeeping, not in physics.  Reported
+            # as an enthalpy flow rather than a loss for that reason.
             Q_offgas = n_CO / dt * MW["CO"] * 1150.0 * (T_g - 298.15) \
                 + CO2_calc / dt * 1240.0 * (T_g - 298.15)
             Q_feed_sensible = 0.0
@@ -647,20 +692,103 @@ class ESFDynamicModel:
             # metal energy
             dEm = (Q_sm - Q_metal_wall - Q_hearth) * dt
             T_m += dEm / max(m_metal * cp_m, 1e3)
-            # freeboard gas
-            # Freeboard gas has negligible thermal mass, so it is treated as
-            # quasi-steady: its temperature sits between the radiating slag
-            # surface and the cooled roof hot face, lifted by the heat of
-            # post-combustion of CO in the gas space.
-            m_gas_s = max(0.05, n_CO / dt * MW["CO"] + CO2_calc / dt
-                          + i.air_ingress_Nm3_t * 1.29 / 3600.0
-                          * i.dri_feed_t_h)
-            dT_pc = min(150.0, Q_pc / max(m_gas_s * 1200.0, 1e3))
-            T_g_target = 0.50 * T_s + 0.50 * T_hf_roof + dT_pc
-            T_g += max(-20.0, min(20.0, 0.25 * (T_g_target - T_g)))
-            T_g = max(600.0, min(2400.0, T_g))
             T_s = max(1300.0, min(2200.0, T_s))
             T_m = max(1300.0, min(2100.0, T_m))
+
+            # ---- freeboard gas temperature ------------------------
+            # The freeboard gas holds a negligible amount of heat
+            # compared with the baths, so its temperature is obtained
+            # from a steady balance rather than from an accumulation
+            # term.  The gas is a participating medium: it absorbs from
+            # the slag surface below and radiates to the roof and the
+            # upper sidewall above, both of which are water cooled, and
+            # it is carried through the freeboard at the rate the
+            # reactions and the ingress air supply it.  Post-combustion
+            # of CO releases Q_pc inside the gas itself.
+            #
+            #   m cp (Tg - Tin) = Q_pc
+            #                   + eps_g sigma A_bath (Ts^4 - Tg^4)
+            #                   - eps_g sigma A_roof (Tg^4 - Troof^4)
+            #                   - eps_g sigma A_fb   (Tg^4 - Twall^4)
+            #                   + h A_bath (Ts - Tg)
+            #                   - h A_roof (Tg - Troof)
+            #                   - h A_fb   (Tg - Twall)
+            #
+            # The left side is monotone increasing in Tg and every term
+            # on the right is monotone decreasing, so the balance has a
+            # single root, found below by bisection.
+            #
+            # This replaces an earlier mixing rule, Tg = 0.5 Ts +
+            # 0.5 Troof + dT_pc, which entered the water-cooled roof as
+            # a heat source carrying the same weight as the bath.  The
+            # roof hot face is itself a response to the gas temperature
+            # through heat_loss_network, so the two drove each other
+            # upwards with a loop gain of one half, and the gas settled
+            # roughly 200 K above the bath that is its only heat source,
+            # with the roof hot face above the bath as well.  In the
+            # balance below the cooled surfaces appear only in loss
+            # terms, so the gas is bounded below by the coldest surface
+            # it sees and above by the slag temperature plus the
+            # adiabatic post-combustion rise.
+            m_CO_s = n_CO / dt * MW["CO"]
+            m_CO2_s = CO2_calc / dt
+            m_air_s = (i.air_ingress_Nm3_t * 1.29 / 3600.0
+                       * i.dri_feed_t_h)
+            m_gas_s = max(0.05, m_CO_s + m_CO2_s + m_air_s)
+            cp_g = 1200.0
+            # CO and calcination CO2 leave the charge at bath
+            # temperature; ingress air enters cold
+            T_g_in = ((m_CO_s + m_CO2_s) * T_s
+                      + m_air_s * 298.15) / m_gas_s
+            T_hf_wall = hl["zones"]["freeboard"]["T_hotface_K"]
+            A_bath_fb = geo.bath_area_free
+            A_roof_fb = geo.area_roof
+            A_wall_fb = geo.area_freeboard
+            h_cv_fb = 22.0
+            eps_g_fb = pr.gas_emissivity(gas_y, geo.mean_beam_length, T_g)
+            C_rad = eps_g_fb * pr.SIGMA_SB
+
+            def _freeboard_residual(Tg: float) -> float:
+                return (Q_pc
+                        - m_gas_s * cp_g * (Tg - T_g_in)
+                        + C_rad * A_bath_fb * (T_s ** 4 - Tg ** 4)
+                        - C_rad * A_roof_fb * (Tg ** 4 - T_hf_roof ** 4)
+                        - C_rad * A_wall_fb * (Tg ** 4 - T_hf_wall ** 4)
+                        + h_cv_fb * A_bath_fb * (T_s - Tg)
+                        - h_cv_fb * A_roof_fb * (Tg - T_hf_roof)
+                        - h_cv_fb * A_wall_fb * (Tg - T_hf_wall))
+
+            lo, hi = 500.0, 2600.0
+            if _freeboard_residual(lo) < 0.0:
+                T_g_qs = lo
+            elif _freeboard_residual(hi) > 0.0:
+                T_g_qs = hi
+            else:
+                for _ in range(48):
+                    mid = 0.5 * (lo + hi)
+                    if _freeboard_residual(mid) > 0.0:
+                        lo = mid
+                    else:
+                        hi = mid
+                T_g_qs = 0.5 * (lo + hi)
+            # the hot faces are taken from the previous network solve, so
+            # the gas temperature is relaxed rather than set outright;
+            # the relaxation changes the path, not the balance it settles on
+            T_g += 0.50 * (T_g_qs - T_g)
+            dT_pc = Q_pc / max(m_gas_s * cp_g, 1e3)
+            T_g = max(600.0, min(2400.0, T_g))
+
+            # Freeboard composition for the next step's emissivity.
+            # n_CO and n_CO_burn are already molar amounts over the step
+            # and MW is in kg/mol, so the air stream is the only one that
+            # has to be converted from a mass rate.
+            n_CO_out = max(0.0, n_CO - n_CO_burn) / dt
+            n_CO2_out = n_CO_burn / dt + m_CO2_s / MW["CO2"]
+            n_air_out = m_air_s / 0.028850
+            n_tot_out = max(1e-9, n_CO_out + n_CO2_out + n_air_out)
+            self._gas_y = {"CO": n_CO_out / n_tot_out,
+                           "CO2": n_CO2_out / n_tot_out,
+                           "N2": n_air_out / n_tot_out}
 
             # ---- 9. tapping ---------------------------------------
             if t_min >= next_metal_tap and metal_tapping_until < t_min:
@@ -794,7 +922,7 @@ class ESFDynamicModel:
                     "wall_loss_MW": (Q_wall + Q_metal_wall + Q_fbwall) / 1e6,
                     "roof_loss_MW": Q_roof / 1e6,
                     "hearth_loss_MW": Q_hearth / 1e6,
-                    "offgas_loss_MW": Q_offgas / 1e6,
+                    "offgas_enthalpy_MW": Q_offgas / 1e6,
                     "arc_rad_MW": P_fb / 1e6,
                     "electrode_kg_cum": cum["electrode_kg"],
                     "CO2_intensity_t_t": cum["CO2_kg"] / 1000.0

@@ -648,7 +648,7 @@ with TABS[7]:
         pwr_ctrl = st.selectbox("Power control",
                                 ["temperature", "fixed", "schedule"])
         P_rated = st.number_input("Rated active power (MW)", 5.0, 300.0,
-                                  112.0, 1.0)
+                                  116.0, 1.0)
         T_set = st.number_input("Hot-metal setpoint (degC)", 1400.0, 1560.0,
                                 1500.0, 5.0)
     with b:
@@ -783,7 +783,7 @@ with TABS[8]:
             "Gas and emissions": ["CO_Nm3_h", "CO2_kg_h", "offgas_T_C",
                                   "CO2_intensity_t_t"],
             "Loss breakdown": ["wall_loss_MW", "roof_loss_MW",
-                               "hearth_loss_MW", "offgas_loss_MW",
+                               "hearth_loss_MW", "offgas_enthalpy_MW",
                                "arc_rad_MW"],
         }
         pick = st.multiselect("Panels to display", list(groups),
